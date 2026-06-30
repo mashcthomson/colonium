@@ -1,0 +1,16 @@
+{
+  "include": ["colonia", "scripts", "tests"],
+  "exclude": [
+    ".venv",
+    "build",
+    "dist",
+    "**/__pycache__",
+    ".pytest_cache",
+    ".ruff_cache"
+  ],
+  "pythonVersion": "3.11",
+  "pythonPlatform": "Linux",
+  "venvPath": ".",
+  "venv": ".venv",
+  "reportMissingTypeStubs": false
+}

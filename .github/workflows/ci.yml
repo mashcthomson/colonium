@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install package and dev tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Lint
+        run: python -m ruff check .
+
+      - name: Format check
+        run: python -m ruff format --check .
+
+      - name: Type check
+        run: python -m pyright .
+
+      - name: Tests with coverage
+        run: python -m pytest --cov=colonia --cov-report=term-missing --cov-fail-under=80 -q
+
+      - name: Build package
+        run: python -m build
+
+      - name: Dependency audit
+        run: pip-audit --skip-editable
+
+      - name: Static security scan
+        run: bandit -r colonia scripts perplexity_export.py -x tests -ll
+
+      - name: Repository hygiene scan
+        run: python scripts/check_repo_hygiene.py
