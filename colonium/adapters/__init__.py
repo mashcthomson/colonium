@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from colonia.adapters.base import ChatAdapter
-from colonia.adapters.dom import ChatGPTAdapter, ClaudeAdapter, GeminiAdapter
-from colonia.adapters.grok import GrokAdapter
-from colonia.adapters.perplexity import PerplexityAdapter
-from colonia.models import ServiceName
+from colonium.adapters.base import ChatAdapter
+from colonium.adapters.dom import ChatGPTAdapter, ClaudeAdapter, GeminiAdapter
+from colonium.adapters.grok import GrokAdapter
+from colonium.adapters.perplexity import PerplexityAdapter
+from colonium.models import ServiceName
 
 ADAPTERS: dict[ServiceName, type[ChatAdapter]] = {
     ServiceName.CHATGPT: ChatGPTAdapter,

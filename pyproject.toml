@@ -1,5 +1,5 @@
 [project]
-name = "colonia"
+name = "colonium"
 version = "0.1.0"
 description = "Non-API LLM council for research and consulting workflows through local browser sessions"
 readme = "README.md"
@@ -55,15 +55,15 @@ markers = [
 ]
 
 [project.scripts]
-colonia = "colonia.cli:main"
-colonia-mcp = "colonia.mcp_server:main"
+colonium = "colonium.cli:main"
+colonium-mcp = "colonium.mcp_server:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["colonia"]
+packages = ["colonium"]
 
 [tool.ruff]
 line-length = 100

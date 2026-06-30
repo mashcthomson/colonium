@@ -1,255 +1,423 @@
-# Colonia
+# Colonium
 
-**A non-API LLM council for research and consulting workflows in your AI agent.**
+Colonium is a local, non-API LLM council for research and technical consulting.
 
-GitHub repository: `mashcthomson/colonium`  
-Package and CLI name: `colonia`
+It drives your own logged-in ChatGPT, Claude, Gemini, Grok, and Perplexity
+browser sessions, sends the same prompt to selected services, and saves the
+results as Markdown, JSON, and artifacts. It is a local controller, not a local
+AI model: any developer, script, or AI agent that can call a CLI or MCP tool can
+use it.
 
-Colonia drives your own logged-in browser sessions instead of calling model APIs. It can ask the same prompt across ChatGPT, Claude, Gemini, Grok, and Perplexity, then save a clean markdown report, structured JSON, progress metadata, and any linked or code-block artifacts the models produce.
+Colonium is useful when you want several consumer LLM products to review a
+question, plan, research task, or code approach without sending prompts, cookies,
+or API keys to a hosted orchestration service.
 
-It is built for local agent workflows where you want multiple consumer LLM products to act like a council without moving secrets into provider APIs.
+## What Colonium Does
 
-## Public Repo Guarantees
+- Opens and manages multiple isolated Chrome profiles.
+- Sends prompts to ChatGPT, Claude, Gemini, Grok, and Perplexity.
+- Supports single-model asks, multi-model councils, session continuation, and
+  fresh-chat mode.
+- Runs up to eight named browser lanes: `alpha` through `theta`.
+- Saves each run to `report.md`, `result.json`, and an `artifacts/` directory.
+- Preserves fenced code blocks in Markdown and exports them as separate files.
+- Downloads linked files when provider pages expose downloadable artifacts.
+- Removes common footer, upsell, and ad-like provider noise before reports are
+  written.
+- Can select ChatGPT Web Search or Deep Research from prompt intent or tags.
+- Exposes a local MCP server so other AI agents can use Colonium as a tool.
 
-This repository is intended to stay clean of:
+## What It Is Not
 
-- API keys, tokens, and browser cookies
-- local browser profiles and run outputs
-- machine-specific home-directory paths
-- personal email addresses embedded in source files
+- It is not a hosted product.
+- It is not an official model API wrapper.
+- It is not a local/offline LLM runtime.
+- It is not meant for high-volume scraping or production workloads needing SLAs.
 
-CI enforces a repository hygiene scan in addition to tests, dependency audit, CodeQL, and Bandit.
+For production throughput, strict compliance, or guaranteed availability, use the
+official provider APIs.
 
-## What It Does
+## OS And Desktop Support
 
-- Runs up to 8 isolated Chrome profiles: `alpha` through `theta`.
-- Uses a Linux "Desktop 2" through Xephyr, workspace mode, or the current display.
-- Sends prompts to ChatGPT, Claude, Gemini, Grok, and Perplexity through browser UI automation.
-- Supports session continuity, fresh-chat mode, browser pools, reserve browsers, and failover.
-- Emits live completion progress with `colonia ask --progress`.
-- Writes `report.md`, `result.json`, and an artifact directory for every run.
-- Preserves fenced code blocks in markdown and saves them as `code-block-XX` files.
-- Strips provider footer/upsell noise from stored replies.
-- Can auto-select ChatGPT Web search or Deep research from prompt intent.
-- Exposes local MCP tools/resources for other AI agents.
+Colonium is designed around Chrome plus Playwright/CDP, so the core browser
+control path can run on macOS, Linux, and Windows when Chrome is available.
 
-## When To Use It
+Linux is the best-tested environment and has the most desktop isolation options.
+macOS and Windows should use `current` mode, which opens the browser profiles on
+the normal desktop.
 
-Use Colonia when you want a local AI agent to consult multiple logged-in model products for research, review, planning, second opinions, or synthesis.
+| Mode | OS | What it does |
+| --- | --- | --- |
+| `current` | macOS, Linux, Windows | Uses the current desktop with no isolation. |
+| `xephyr` | Linux only | Starts a nested X server for an isolated browser desktop. |
+| `workspace` | Linux only | Sends windows to an existing workspace with `wmctrl`. |
 
-Colonia is not a replacement for official APIs when you need production SLAs, high throughput, or strict provider terms around automation. It is a local operator tool for personal research and agent-assisted consulting.
+Xephyr is optional. It is the default on Linux because it keeps the browser farm
+away from your main desktop, but it is not required for Colonium to work.
 
-## Quick Start
+## Requirements
 
-Linux/X11 is required.
+- Python 3.11 or newer
+- Google Chrome or Chromium
+- Playwright browser dependencies
+- Logged-in accounts for the model products you want to use
+
+Linux optional packages:
+
+- `xserver-xephyr` for `xephyr` mode
+- `wmctrl` for `workspace` mode
+- a lightweight window manager such as `openbox` for the nested desktop
+
+If Chrome is not on your PATH, set `desktop.chrome_binary` in
+`~/.colonium/config.json`.
+
+## Install From Source
+
+macOS/Linux:
 
 ```bash
-cd /path/to/colonia
+git clone https://github.com/mashcthomson/colonium.git
+cd colonium
+
 python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
 playwright install chromium
-
-colonia init
-colonia desktop start
-colonia browsers launch --login
-colonia browsers health
 ```
 
-After `colonia browsers launch --login`, sign in once to the services you want to use in each Chrome profile.
+Windows PowerShell:
 
-Run a council query:
+```powershell
+git clone https://github.com/mashcthomson/colonium.git
+cd colonium
+
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -e ".[dev]"
+playwright install chromium
+```
+
+Initialize local state:
 
 ```bash
-colonia ask \
-  -p "Compare REST and GraphQL for a small B2B SaaS backend." \
-  --browser beta,gamma \
-  --service gemini,claude,grok,perplexity,chatgpt \
-  --progress
+colonium init
 ```
 
-Reports are written to:
+This creates `~/.colonium/config.json` and runtime directories under
+`~/.colonium/`.
+
+## First Run
+
+Start the desktop mode:
+
+```bash
+colonium desktop start
+```
+
+On macOS or Windows, use current mode if an existing config still points at a
+Linux-only mode:
+
+```bash
+colonium desktop start --mode current
+```
+
+Launch browser profiles and open the login pages:
+
+```bash
+colonium browsers launch --login
+```
+
+Sign in to the services you want to use. Login state stays in local Chrome
+profiles under `~/.colonium/profiles/`.
+
+Check browser health:
+
+```bash
+colonium browsers health
+```
+
+## Run A Council Query
+
+Ask several services from one browser profile:
+
+```bash
+colonium ask \
+  --browser beta \
+  --service gemini,claude,grok,perplexity,chatgpt \
+  --progress \
+  -p "Review this backend architecture and list the main failure modes."
+```
+
+Ask across several browser profiles:
+
+```bash
+colonium ask \
+  --browser beta,gamma,delta \
+  --service gemini,claude,grok \
+  --progress \
+  -p "Compare these implementation options and recommend the safest one."
+```
+
+Use all configured browser lanes, including reserve lanes:
+
+```bash
+colonium ask \
+  --browser all \
+  --all-browsers \
+  --service chatgpt,claude,gemini \
+  -p "Summarize the trade-offs in this plan."
+```
+
+## Outputs
+
+Each run creates a folder under `~/.colonium/runs/<job-id>/`.
 
 ```text
-~/.colonia/runs/<job-id>/report.md
-~/.colonia/runs/<job-id>/result.json
-~/.colonia/runs/<job-id>/artifacts/
+~/.colonium/runs/<job-id>/
+  report.md
+  result.json
+  artifacts/
 ```
 
-## Browser Profiles
+`report.md` is the readable council report. It includes the prompt, summary
+counts, provider URLs, model labels when available, errors, artifact links, and
+each response grouped by browser and service.
 
-Colonia defines eight browser slots by default.
+`result.json` is the structured run result for scripts and agents.
 
-| Browser | Default role |
-| --- | --- |
-| `alpha` | reserved/manual lane |
-| `beta` | active default |
-| `gamma` | active default |
-| `delta` | active default |
-| `epsilon` | active default |
-| `zeta` | reserve/manual lane |
-| `eta` | reserve/manual lane |
-| `theta` | reserve/manual lane |
+`artifacts/` contains downloaded files and extracted code blocks. Fenced code
+blocks are preserved in the report and saved with language-based extensions when
+possible:
 
-Useful commands:
-
-```bash
-colonia browsers launch
-colonia browsers launch --name beta,gamma
-colonia browsers launch --login
-colonia browsers health
-colonia browsers stop
+```text
+~/.colonium/runs/<job-id>/artifacts/beta/chatgpt/code/code-block-01.py
 ```
 
-By default, `--browser all` uses the active pool. Add `--all-browsers` to include reserve browsers.
+Colonium writes Markdown, not R Markdown. If a provider returns R or R Markdown
+code fences, those fences are preserved and exported like other code artifacts.
 
-## Desktop Modes
+## Progress And Long Research Runs
 
-Colonia keeps the browser farm away from your main desktop.
-
-| Mode | Description |
-| --- | --- |
-| `xephyr` | Nested X server on `DISPLAY=:20`; default and recommended |
-| `workspace` | Uses `wmctrl` to move browsers to a Linux workspace |
-| `current` | Uses your current display; useful for debugging |
+Use `--progress` when running many browsers or slow tools:
 
 ```bash
-colonia desktop start
-colonia desktop start --mode workspace --workspace 1
-colonia desktop status
-colonia desktop stop
+colonium ask --browser all --all-browsers --progress -p "..."
 ```
 
-## Asking Models
+The CLI prints completed browser/service batches to stderr while other tasks are
+still pending. The final `result.json` also stores progress events, so an agent
+can see which model replies finished and which ones were still pending during the
+run.
 
-Single service:
+Deep Research can take much longer than a normal reply. Use a longer timeout for
+those runs:
 
 ```bash
-colonia ask -p "Give me a concise answer." --browser gamma --service gemini
+colonium ask \
+  --service chatgpt,perplexity \
+  --timeout 1800000 \
+  -p "#deep-research Produce a cited market scan for ..."
 ```
 
-Multiple services:
+## Session Continuation
+
+Use `--session-id` to continue related turns across services:
 
 ```bash
-colonia ask \
-  -p "Review this architecture decision and list failure modes." \
+colonium ask \
+  --session-id design-review-1 \
   --browser gamma \
-  --service gemini,claude,grok,perplexity,chatgpt
-```
+  --service claude,gemini \
+  -p "Remember this context: we are reviewing the billing service."
 
-Continue a thread across turns:
-
-```bash
-colonia ask -p "Remember token PROJECT_X." --session-id project-x --browser gamma --service gemini,grok
-colonia ask -p "What token did I ask you to remember?" --session-id project-x --browser gamma --service gemini,grok
+colonium ask \
+  --session-id design-review-1 \
+  --browser gamma \
+  --service claude,gemini \
+  -p "Given that context, what are the riskiest edge cases?"
 ```
 
 Force a new thread:
 
 ```bash
-colonia ask -p "Start fresh." --fresh-chat --browser gamma --service chatgpt
+colonium ask --fresh-chat --browser gamma --service chatgpt -p "Start fresh."
 ```
 
-## ChatGPT Web Search And Deep Research
+## ChatGPT Tools And Prompt Skills
 
-Colonia can select ChatGPT tools before sending a prompt.
+Colonium can select ChatGPT Web Search or Deep Research before sending a prompt.
 
 Automatic triggers:
 
-- Deep research: prompts containing phrases like `deep research`, `thorough research`, `comprehensive research`, or `research report`.
-- Web search: prompts containing phrases like `latest`, `current`, `today`, `this week`, or `as of now`.
+- Web Search: `latest`, `current`, `today`, `this week`, `as of now`
+- Deep Research: `deep research`, `thorough research`, `comprehensive research`,
+  `research report`
 
 Explicit tags:
 
 ```text
-#deep-research
 #web-search
-#chatgpt-tool:deep-research
+#deep-research
 #chatgpt-tool:web-search
+#chatgpt-tool:deep-research
 #chatgpt-tool:none
 #no-chatgpt-tool
 ```
 
-Deep research can take much longer than a normal reply. Use longer timeouts for those runs.
+Prompt skill presets are also exposed through the capability payload. Examples
+include quick answers, quick web checks, Reddit/community scans, citation-heavy
+answers, contrarian review, consensus synthesis, and reflective review.
 
-## Artifacts And Markdown
+## Model Choice Strategy
 
-Every run stores model outputs in a markdown report and JSON file.
+Colonium treats the eight browser lanes as model lanes. This lets a caller ask
+different services, models, and effort levels for different kinds of judgment.
 
-Colonia currently handles:
-
-- Linked downloadable files exposed by provider pages.
-- Fenced code blocks in model replies.
-- Language-based file extensions for common code fences.
-- Provider footer cleanup, including common ChatGPT upgrade/footer text.
-- Unclosed code fences, which are closed before report output.
-
-Example artifact path:
-
-```text
-~/.colonia/runs/<job-id>/artifacts/gamma/gemini/code/code-block-01.py
-```
-
-Markdown output details:
-
-- `report.md` is human-readable and grouped by browser/service response.
-- `result.json` is pretty-printed with stable indentation for machine use.
-- fenced code blocks remain fenced in markdown and are also saved as separate files.
-- provider footer noise is removed before report output is written.
-
-## Model Plans
-
-Model menus in consumer products change often. Colonia keeps model/profile plans inspectable:
+Inspect the current plan:
 
 ```bash
-colonia capabilities --json
-colonia models plan --service gemini
-colonia models apply --service gemini --dry-run
-colonia models apply --service chatgpt
+colonium models plan
+colonium models plan --service chatgpt
+colonium models plan --service perplexity --browser beta,gamma,delta
 ```
 
-Use dry runs before applying model changes.
+Dry-run model changes before applying them:
+
+```bash
+colonium models apply --service claude --dry-run
+```
+
+The public capability payload includes the model plan and caveats:
+
+```bash
+colonium capabilities --json
+```
+
+Current lanes include combinations such as:
+
+- Claude Sonnet lanes with medium, high, max, and thinking-style assignments.
+- Gemini Flash, Flash-Lite, and Pro lanes with standard or extended thinking.
+- Grok Fast, Auto, Expert, and Heavy lanes.
+- Perplexity search, deep research, model council, and learn-step-by-step lanes.
+- ChatGPT Web Search lanes plus reserved/manual Deep Research lanes.
+
+Provider UIs change often. Treat `models plan` as the intended layout and verify
+live UI state before relying on a lane for critical work.
+
+## Browser Profiles
+
+Colonium ships with eight named browser slots.
+
+| Browser | Default pool |
+| --- | --- |
+| `alpha` | active, skipped by default for now |
+| `beta` | active |
+| `gamma` | active |
+| `delta` | active |
+| `epsilon` | active |
+| `zeta` | reserve |
+| `eta` | reserve |
+| `theta` | reserve |
+
+Useful commands:
+
+```bash
+colonium browsers launch
+colonium browsers launch --name beta,gamma
+colonium browsers launch --login
+colonium browsers health
+colonium browsers stop
+```
+
+By default, `--browser all` uses the active pool. Add `--all-browsers` to include
+reserve browsers.
 
 ## MCP Server
 
 Run the local MCP server:
 
 ```bash
-colonia-mcp
+colonium-mcp
 ```
 
-The MCP surface exposes health, capabilities, browser launch/stop, and council ask operations for local agents.
+The MCP server exposes:
+
+- `colonium_capabilities`
+- `colonium_health`
+- `colonium_ask`
+- `colonium_model_plan`
+- `colonium_model_apply`
+- `colonium://capabilities`
+- `colonium://config`
+
+This is the recommended integration point for other AI coding agents. The agent
+does not need model-provider API keys; it asks Colonium to operate your local
+browser sessions.
 
 ## Configuration
 
-Config lives at:
+The default config file is:
 
 ```text
-~/.colonia/config.json
+~/.colonium/config.json
 ```
 
 Example:
 
 ```json
 {
-  "data_dir": "/home/you/.colonia",
+  "data_dir": "/home/you/.colonium",
   "desktop": {
-    "mode": "xephyr",
+    "mode": "current",
     "display": ":20",
     "workspace_index": 1,
     "width": 1920,
-    "height": 1080
+    "height": 1080,
+    "chrome_binary": "google-chrome"
   },
   "browsers": [
     {
       "name": "alpha",
       "cdp_port": 9222,
       "profile_dir": "profiles/alpha",
-      "enabled": true
+      "enabled": true,
+      "pool": "active"
     }
   ]
 }
 ```
+
+On macOS, `chrome_binary` can be:
+
+```text
+/Applications/Google Chrome.app/Contents/MacOS/Google Chrome
+```
+
+On Windows, use `chrome.exe` if it is on PATH or set the full Chrome executable
+path.
+
+## Privacy And Security
+
+Colonium is local-first, but it still handles sensitive local state.
+
+- Browser cookies and login state live under `~/.colonium/profiles/`.
+- Run reports and artifacts live under `~/.colonium/runs/`.
+- Generated reports may contain prompt text, model replies, links, and downloaded
+  files.
+- Do not commit `~/.colonium`, browser profiles, cookies, local databases, or
+  generated run outputs.
+- Review `report.md`, `result.json`, and artifacts before sharing them.
+- Use separate browser accounts or profiles for risky prompts.
+
+The repository includes a hygiene scan for obvious secrets, personal email
+addresses, and machine-specific home paths:
+
+```bash
+python scripts/check_repo_hygiene.py
+```
+
+See [SECURITY.md](SECURITY.md) for supported security reporting and release
+hygiene.
 
 ## Development
 
@@ -261,34 +429,28 @@ pip install -e ".[dev]"
 python -m ruff format .
 python -m ruff check .
 python -m pyright .
-python -m pytest --cov=colonia --cov-report=term-missing --cov-fail-under=80 -q
+python -m pytest --cov=colonium --cov-report=term-missing --cov-fail-under=80 -q
 python -m build
 pip-audit --skip-editable
-python -m bandit -r colonia -x tests -ll
+python -m bandit -r colonium scripts perplexity_export.py -x tests -ll
 python scripts/check_repo_hygiene.py
 ```
 
-## Security And Privacy Notes
+GitHub Actions runs linting, type checking, tests, package build, dependency
+audit, Bandit, CodeQL, and repository hygiene checks.
 
-- Colonia stores browser profiles and run outputs under `~/.colonia` by default.
-- Do not commit `~/.colonia`, browser profiles, run outputs, cookies, or local databases.
-- `.gitignore` excludes common local caches, runtime files, virtualenvs, build outputs, and env files.
-- Review generated reports before sharing them; model replies may contain information from your prompts.
-- Use separate browser profiles/accounts when testing risky prompts or untrusted content.
-- See [SECURITY.md](SECURITY.md) for disclosure and release-hygiene guidance.
+## Limitations
 
-## Current Limits
-
-- Live behavior depends on provider UI stability and account state.
-- File upload support is service-dependent and incomplete.
-- Consumer model labels and menus can change without notice.
-- Deep research flows may exceed normal timeout settings.
-- This is a local automation tool, not a hosted service.
+- Provider UIs change without notice. Selectors and model names may need updates.
+- Account state matters. Rate limits, modals, onboarding screens, and plan limits
+  can affect runs.
+- macOS and Windows support uses current-desktop mode; Linux has the strongest
+  isolation story today.
+- File upload support is not complete across all providers.
+- Browser automation may not fit every provider's terms. Use official APIs for
+  production or high-volume workloads.
+- Colonium is alpha software. Validate important outputs before acting on them.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
-
-## Legacy Utility
-
-`perplexity_export.py` is a standalone legacy Perplexity history exporter that attaches through Chrome CDP.
+Colonium is released under the MIT License. See [LICENSE](LICENSE).

@@ -4,13 +4,13 @@ import argparse
 import json
 from typing import Any
 
-from colonia.capabilities import build_capabilities
-from colonia.config import load_config
-from colonia.models import CouncilJobRequest, ServiceName
+from colonium.capabilities import build_capabilities
+from colonium.config import load_config
+from colonium.models import CouncilJobRequest, ServiceName
 
 
 def health_payload() -> list[dict[str, Any]]:
-    from colonia.browser.launcher import BrowserLauncher
+    from colonium.browser.launcher import BrowserLauncher
 
     return BrowserLauncher().health()
 
@@ -25,7 +25,7 @@ def run_ask_payload(
     timeout_ms: int = 180_000,
     fresh_chat: bool = False,
 ) -> dict[str, Any]:
-    from colonia.orchestrator import CouncilOrchestrator
+    from colonium.orchestrator import CouncilOrchestrator
 
     selected_services = [
         ServiceName(service.strip()) for service in (services or [s.value for s in ServiceName])
@@ -48,7 +48,7 @@ def model_plan_payload(
     service: str | None = None,
     browsers: list[str] | None = None,
 ) -> list[dict[str, Any]]:
-    from colonia.model_settings import model_plan
+    from colonium.model_settings import model_plan
 
     return model_plan(service=service, browsers=browsers)
 
@@ -59,7 +59,7 @@ def model_apply_payload(
     browsers: list[str] | None = None,
     dry_run: bool = True,
 ) -> list[dict[str, Any]]:
-    from colonia.model_settings import apply_models
+    from colonium.model_settings import apply_models
 
     return apply_models(service=service, browsers=browsers, dry_run=dry_run)
 
@@ -72,30 +72,30 @@ def create_mcp_server():
             "MCP support requires the Python MCP SDK. Install with: pip install 'mcp[cli]'"
         ) from exc
 
-    mcp = FastMCP("Colonia")
+    mcp = FastMCP("Colonium")
 
-    @mcp.resource("colonia://capabilities")
+    @mcp.resource("colonium://capabilities")
     def capabilities_resource() -> str:
-        """Machine-readable Colonia capability matrix."""
+        """Machine-readable Colonium capability matrix."""
         return json.dumps(build_capabilities(), indent=2)
 
-    @mcp.resource("colonia://config")
+    @mcp.resource("colonium://config")
     def config_resource() -> str:
-        """Current Colonia config as JSON."""
+        """Current Colonium config as JSON."""
         return load_config().model_dump_json(indent=2)
 
     @mcp.tool()
-    def colonia_capabilities() -> dict[str, Any]:
-        """Return Colonia service order, browser routing, model plans, presets, and caveats."""
+    def colonium_capabilities() -> dict[str, Any]:
+        """Return Colonium service order, browser routing, model plans, presets, and caveats."""
         return build_capabilities()
 
     @mcp.tool()
-    def colonia_health() -> list[dict[str, Any]]:
+    def colonium_health() -> list[dict[str, Any]]:
         """Return CDP/browser health for alpha-theta."""
         return health_payload()
 
     @mcp.tool()
-    def colonia_ask(
+    def colonium_ask(
         prompt: str,
         browsers: list[str] | None = None,
         services: list[str] | None = None,
@@ -104,7 +104,7 @@ def create_mcp_server():
         timeout_ms: int = 180_000,
         fresh_chat: bool = False,
     ) -> dict[str, Any]:
-        """Run a Colonia council query and return summary, responses, artifacts, and metadata."""
+        """Run a Colonium council query and return summary, responses, artifacts, and metadata."""
         return run_ask_payload(
             prompt=prompt,
             browsers=browsers,
@@ -116,7 +116,7 @@ def create_mcp_server():
         )
 
     @mcp.tool()
-    def colonia_model_plan(
+    def colonium_model_plan(
         service: str | None = None,
         browsers: list[str] | None = None,
     ) -> list[dict[str, Any]]:
@@ -124,7 +124,7 @@ def create_mcp_server():
         return model_plan_payload(service=service, browsers=browsers)
 
     @mcp.tool()
-    def colonia_model_apply(
+    def colonium_model_apply(
         service: str = "claude",
         browsers: list[str] | None = None,
         dry_run: bool = True,
@@ -136,7 +136,7 @@ def create_mcp_server():
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Run the Colonia MCP server")
+    parser = argparse.ArgumentParser(description="Run the Colonium MCP server")
     parser.add_argument(
         "--transport",
         choices=["stdio", "sse", "streamable-http"],

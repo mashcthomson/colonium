@@ -8,8 +8,8 @@ import subprocess
 import time
 from dataclasses import dataclass
 
-from colonia.config import load_config
-from colonia.models import ColoniaConfig, DesktopMode
+from colonium.config import load_config
+from colonium.models import ColoniumConfig, DesktopMode
 
 
 @dataclass
@@ -23,7 +23,7 @@ class DesktopState:
 
 
 class LinuxDesktopManager:
-    """Manage Colonia's isolated 'Desktop 2' on Linux.
+    """Manage Colonium's isolated 'Desktop 2' on Linux.
 
     Modes:
     - xephyr: nested X server (recommended) — like a separate Windows virtual desktop
@@ -33,7 +33,7 @@ class LinuxDesktopManager:
 
     STATE_FILE = "desktop.json"
 
-    def __init__(self, cfg: ColoniaConfig | None = None):
+    def __init__(self, cfg: ColoniumConfig | None = None):
         self.cfg = cfg or load_config()
         self.state_path = self.cfg.state_dir / self.STATE_FILE
 
@@ -125,7 +125,7 @@ class LinuxDesktopManager:
         if shutil.which("wmctrl") is None:
             raise RuntimeError(
                 "workspace mode requires wmctrl. Install: sudo apt install wmctrl\n"
-                "Or use: colonia desktop start --mode xephyr"
+                "Or use: colonium desktop start --mode xephyr"
             )
         display = os.environ.get("DISPLAY", ":0")
         idx = self.cfg.desktop.workspace_index
@@ -206,7 +206,7 @@ class LinuxDesktopManager:
             f"{w}x{h}",
             "-resizeable",
             "-title",
-            "Colonia Desktop 2",
+            "Colonium Desktop 2",
         ]
         proc = subprocess.Popen(
             cmd,
@@ -270,7 +270,7 @@ class LinuxDesktopManager:
                 "configured_mode": desktop.mode.value,
                 "running": False,
                 "display": None,
-                "hint": "Run: colonia desktop start",
+                "hint": "Run: colonium desktop start",
             }
         alive = (
             state.mode != DesktopMode.XEPHYR
@@ -286,8 +286,8 @@ class LinuxDesktopManager:
             "workspace_index": state.workspace_index,
             "resolution": f"{desktop.width}x{desktop.height}",
             "view_hint": (
-                f"Colonia Desktop 2 is on DISPLAY={state.display} "
-                f"(window title: 'Colonia Desktop 2')"
+                f"Colonium Desktop 2 is on DISPLAY={state.display} "
+                f"(window title: 'Colonium Desktop 2')"
                 if state.mode == DesktopMode.XEPHYR
                 else f"Browsers target workspace {state.workspace_index} on {state.display}"
             ),

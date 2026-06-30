@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from enum import Enum
 from pathlib import Path
 from typing import Any
@@ -18,7 +19,7 @@ class TaskStatus(str, Enum):
 
 
 class DesktopMode(str, Enum):
-    """How Colonia isolates browser windows from your main desktop."""
+    """How Colonium isolates browser windows from your main desktop."""
 
     XEPHYR = "xephyr"
     WORKSPACE = "workspace"
@@ -31,6 +32,18 @@ class ServiceName(str, Enum):
     GEMINI = "gemini"
     GROK = "grok"
     PERPLEXITY = "perplexity"
+
+
+def default_desktop_mode() -> DesktopMode:
+    return DesktopMode.XEPHYR if sys.platform.startswith("linux") else DesktopMode.CURRENT
+
+
+def default_chrome_binary() -> str:
+    if sys.platform == "darwin":
+        return "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+    if sys.platform.startswith("win"):
+        return "chrome.exe"
+    return "google-chrome"
 
 
 DEFAULT_SERVICE_ORDER: tuple[ServiceName, ...] = (
@@ -65,18 +78,18 @@ class BrowserInstance(BaseModel):
 
 
 class DesktopConfig(BaseModel):
-    mode: DesktopMode = DesktopMode.XEPHYR
+    mode: DesktopMode = Field(default_factory=default_desktop_mode)
     display: str = ":20"
     workspace_index: int = 1
     width: int = 1920
     height: int = 1080
     xephyr_binary: str = "Xephyr"
-    chrome_binary: str = "google-chrome"
+    chrome_binary: str = Field(default_factory=default_chrome_binary)
     window_manager: str | None = None
 
 
-class ColoniaConfig(BaseModel):
-    data_dir: Path = Field(default_factory=lambda: Path.home() / ".colonia")
+class ColoniumConfig(BaseModel):
+    data_dir: Path = Field(default_factory=lambda: Path.home() / ".colonium")
     desktop: DesktopConfig = Field(default_factory=DesktopConfig)
     browsers: list[BrowserInstance] = Field(default_factory=list)
     default_timeout_ms: int = 300_000

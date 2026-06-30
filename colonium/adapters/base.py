@@ -6,9 +6,9 @@ from pathlib import Path
 
 from playwright.sync_api import Page
 
-from colonia.models import ServiceName, TaskStatus
-from colonia.placeholders import is_thinking_placeholder
-from colonia.text import clean_model_label, normalize_response_markdown
+from colonium.models import ServiceName, TaskStatus
+from colonium.placeholders import is_thinking_placeholder
+from colonium.text import clean_model_label, normalize_response_markdown
 
 BAD_URL_MARKERS = (
     "login",
@@ -49,7 +49,7 @@ DISMISS_ARIA_MARKERS = (
 )
 
 DISMISS_OVERLAY_JS = """({ labels, ariaMarkers }) => {
-    // COLONIA_SAFE_DISMISS
+    // COLONIUM_SAFE_DISMISS
     const normalizedLabels = new Set(labels);
     const markers = ariaMarkers.map((marker) => marker.toLowerCase());
     const normalize = (value) => (value || '').replace(/\\s+/g, ' ').trim().toLowerCase();

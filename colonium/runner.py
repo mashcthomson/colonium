@@ -6,13 +6,13 @@ from urllib.parse import urlparse
 
 from playwright.sync_api import sync_playwright
 
-from colonia.adapters import get_adapter
-from colonia.adapters.base import BAD_URL_MARKERS
-from colonia.config import load_config
-from colonia.models import BrowserInstance, CouncilResponse, ServiceName, TaskStatus
-from colonia.prompt_profiles import apply_prompt_profile
-from colonia.sessions import SessionStore
-from colonia.text import normalize_response_markdown
+from colonium.adapters import get_adapter
+from colonium.adapters.base import BAD_URL_MARKERS
+from colonium.config import load_config
+from colonium.models import BrowserInstance, CouncilResponse, ServiceName, TaskStatus
+from colonium.prompt_profiles import apply_prompt_profile
+from colonium.sessions import SessionStore
+from colonium.text import normalize_response_markdown
 
 
 def run_single_task(
@@ -51,7 +51,7 @@ def run_single_task(
                 status=TaskStatus.AUTH_REQUIRED,
                 url=page.url,
                 latency_ms=int((time.time() - started) * 1000),
-                error="Login required — open this browser on Colonia Desktop 2 and sign in",
+                error="Login required — open this browser on Colonium Desktop 2 and sign in",
             )
 
         if session_id and not fresh_chat:
@@ -151,7 +151,7 @@ def _collect_response_artifacts(
     service: str,
     text: str = "",
 ):
-    from colonia.artifacts import collect_code_artifacts, collect_page_artifacts
+    from colonium.artifacts import collect_code_artifacts, collect_page_artifacts
 
     records = collect_page_artifacts(
         page=page,

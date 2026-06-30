@@ -7,9 +7,9 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-from colonia.config import load_config, resolve_profile_dir
-from colonia.desktop.linux import LinuxDesktopManager
-from colonia.models import BrowserInstance, ColoniaConfig
+from colonium.config import load_config, resolve_profile_dir
+from colonium.desktop.manager import create_desktop_manager
+from colonium.models import BrowserInstance, ColoniumConfig
 
 
 @dataclass
@@ -20,9 +20,9 @@ class LaunchedBrowser:
 
 
 class BrowserLauncher:
-    def __init__(self, cfg: ColoniaConfig | None = None):
+    def __init__(self, cfg: ColoniumConfig | None = None):
         self.cfg = cfg or load_config()
-        self.desktop = LinuxDesktopManager(self.cfg)
+        self.desktop = create_desktop_manager(self.cfg)
 
     def _window_geometry(self, browser: BrowserInstance) -> tuple[int, int, int, int]:
         browsers = [b for b in self.cfg.browsers if b.enabled]
@@ -161,7 +161,7 @@ class BrowserLauncher:
         login_urls: bool = False,
         force: bool = False,
     ) -> list[LaunchedBrowser]:
-        from colonia.models import SERVICE_URLS
+        from colonium.models import SERVICE_URLS
 
         targets = [b for b in self.cfg.browsers if b.enabled and (names is None or b.name in names)]
         urls = list(SERVICE_URLS.values()) if login_urls else None
@@ -198,7 +198,10 @@ class BrowserLauncher:
             pid = self._read_pid(browser)
             if pid:
                 try:
-                    os.killpg(os.getpgid(pid), signal.SIGTERM)
+                    if hasattr(os, "killpg") and hasattr(os, "getpgid"):
+                        os.killpg(os.getpgid(pid), signal.SIGTERM)
+                    else:
+                        os.kill(pid, signal.SIGTERM)
                     stopped += 1
                 except OSError:
                     pass

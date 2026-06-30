@@ -4,7 +4,7 @@ import re
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
-from colonia.models import ArtifactRecord
+from colonium.models import ArtifactRecord
 
 
 ARTIFACT_EXTENSIONS = {

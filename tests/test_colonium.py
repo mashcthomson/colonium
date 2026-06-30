@@ -8,9 +8,9 @@ from typing import Any, cast
 
 import pytest
 
-from colonia.config import default_browsers, default_config, load_config, save_config
-from colonia.consolidator import job_to_markdown, write_job_artifacts
-from colonia.models import (
+from colonium.config import default_browsers, default_config, load_config, save_config
+from colonium.consolidator import job_to_markdown, write_job_artifacts
+from colonium.models import (
     ArtifactRecord,
     CouncilJobRequest,
     CouncilJobResult,
@@ -19,24 +19,24 @@ from colonia.models import (
     ServiceName,
     TaskStatus,
 )
-from colonia.pools import (
+from colonium.pools import (
     ACTIVE_POOL,
     RESERVE_POOL,
     SKIP_BY_DEFAULT,
     BrowserPoolManager,
     is_rate_limit_error,
 )
-from colonia.sessions import SESSION_IDLE_TTL, SessionStore
+from colonium.sessions import SESSION_IDLE_TTL, SessionStore
 
 
 @pytest.fixture
-def tmp_colonia(tmp_path, monkeypatch):
-    data = tmp_path / "colonia"
+def tmp_colonium(tmp_path, monkeypatch):
+    data = tmp_path / "colonium"
     data.mkdir()
     cfg = default_config()
     cfg.data_dir = data
     save_config(cfg, data / "config.json")
-    monkeypatch.setenv("COLONIA_DATA_DIR", str(data))
+    monkeypatch.setenv("COLONIUM_DATA_DIR", str(data))
     return data, cfg
 
 
@@ -137,8 +137,8 @@ def test_rate_limit_detection():
 
 
 # 10
-def test_pool_select_active_only(tmp_colonia):
-    _, cfg = tmp_colonia
+def test_pool_select_active_only(tmp_colonium):
+    _, cfg = tmp_colonium
     mgr = BrowserPoolManager(cfg)
     selected = mgr.select_browsers(["all"])
     assert len(selected) == 4
@@ -147,8 +147,8 @@ def test_pool_select_active_only(tmp_colonia):
 
 
 # 11
-def test_pool_select_all_non_skipped_browsers(tmp_colonia):
-    _, cfg = tmp_colonia
+def test_pool_select_all_non_skipped_browsers(tmp_colonium):
+    _, cfg = tmp_colonium
     mgr = BrowserPoolManager(cfg)
     selected = mgr.select_browsers(["all"], include_all_eight=True)
     assert len(selected) == 7
@@ -163,16 +163,16 @@ def test_pool_select_all_non_skipped_browsers(tmp_colonia):
     ]
 
 
-def test_pool_explicit_alpha_selection_still_works(tmp_colonia):
-    _, cfg = tmp_colonia
+def test_pool_explicit_alpha_selection_still_works(tmp_colonium):
+    _, cfg = tmp_colonium
     mgr = BrowserPoolManager(cfg)
     selected = mgr.select_browsers(["alpha"])
     assert [b.name for b in selected] == ["alpha"]
 
 
 # 12
-def test_pool_pick_reserve(tmp_colonia, session_db):
-    _, cfg = tmp_colonia
+def test_pool_pick_reserve(tmp_colonium, session_db):
+    _, cfg = tmp_colonium
     mgr = BrowserPoolManager(cfg)
     r = mgr.pick_reserve("s", "alpha", session_db)
     assert r is not None
@@ -214,8 +214,8 @@ def test_consolidator_markdown_includes_session():
 
 
 # 15
-def test_write_job_artifacts(tmp_colonia):
-    data, cfg = tmp_colonia
+def test_write_job_artifacts(tmp_colonium):
+    data, cfg = tmp_colonium
     result = CouncilJobResult(
         job_id="artifact-test",
         query="q",
@@ -239,8 +239,8 @@ def test_write_job_artifacts(tmp_colonia):
     assert payload["artifacts"]["artifact_dir"].endswith("/runs/artifact-test/artifacts")
 
 
-def test_consolidator_reports_received_artifacts(tmp_colonia):
-    _, cfg = tmp_colonia
+def test_consolidator_reports_received_artifacts(tmp_colonium):
+    _, cfg = tmp_colonium
     result = CouncilJobResult(
         job_id="artifact-link-test",
         query="q",
@@ -276,7 +276,7 @@ def test_consolidator_reports_received_artifacts(tmp_colonia):
 
 
 def test_collect_page_artifacts_downloads_file_links(tmp_path):
-    from colonia.artifacts import collect_page_artifacts
+    from colonium.artifacts import collect_page_artifacts
 
     class FakeAPIResponse:
         ok = True
@@ -329,7 +329,7 @@ def test_collect_page_artifacts_downloads_file_links(tmp_path):
 
 # 16
 def test_all_service_adapters_registered():
-    from colonia.adapters import ADAPTERS, get_adapter
+    from colonium.adapters import ADAPTERS, get_adapter
 
     for svc in ServiceName:
         assert svc in ADAPTERS
@@ -366,10 +366,10 @@ def test_load_config_migrates_legacy_browser_pools(tmp_path):
     assert pools["theta"] == "reserve"
 
 
-def test_browser_launcher_tiles_browser_windows(tmp_colonia):
-    from colonia.browser.launcher import BrowserLauncher
+def test_browser_launcher_tiles_browser_windows(tmp_colonium):
+    from colonium.browser.launcher import BrowserLauncher
 
-    _, cfg = tmp_colonia
+    _, cfg = tmp_colonium
     launcher = BrowserLauncher(cfg)
     positions = []
     sizes = []
@@ -384,11 +384,11 @@ def test_browser_launcher_tiles_browser_windows(tmp_colonia):
     assert all(size == "--window-size=480,540" for size in sizes)
 
 
-def test_desktop_state_roundtrip_keeps_window_manager_pid(tmp_colonia):
-    from colonia.desktop.linux import DesktopState, LinuxDesktopManager
-    from colonia.models import DesktopMode
+def test_desktop_state_roundtrip_keeps_window_manager_pid(tmp_colonium):
+    from colonium.desktop.linux import DesktopState, LinuxDesktopManager
+    from colonium.models import DesktopMode
 
-    _, cfg = tmp_colonia
+    _, cfg = tmp_colonium
     mgr = LinuxDesktopManager(cfg)
     mgr._save_state(
         DesktopState(
@@ -409,13 +409,13 @@ def test_desktop_state_roundtrip_keeps_window_manager_pid(tmp_colonia):
 
 
 # 18
-def test_orchestrator_skips_dead_cdp(tmp_colonia, monkeypatch):
-    from colonia.orchestrator import CouncilOrchestrator
+def test_orchestrator_skips_dead_cdp(tmp_colonium, monkeypatch):
+    from colonium.orchestrator import CouncilOrchestrator
 
-    _, cfg = tmp_colonia
+    _, cfg = tmp_colonium
     orch = CouncilOrchestrator(cfg)
     monkeypatch.setattr(
-        "colonia.browser.launcher.BrowserLauncher.is_cdp_alive",
+        "colonium.browser.launcher.BrowserLauncher.is_cdp_alive",
         lambda self, port: False,
     )
     req = CouncilJobRequest(
@@ -428,13 +428,13 @@ def test_orchestrator_skips_dead_cdp(tmp_colonia, monkeypatch):
     assert result.summary.ok == 0
 
 
-def test_orchestrator_normalizes_service_order(tmp_colonia, monkeypatch):
-    from colonia.orchestrator import CouncilOrchestrator
+def test_orchestrator_normalizes_service_order(tmp_colonium, monkeypatch):
+    from colonium.orchestrator import CouncilOrchestrator
 
-    _, cfg = tmp_colonia
+    _, cfg = tmp_colonium
     orch = CouncilOrchestrator(cfg)
     monkeypatch.setattr(
-        "colonia.browser.launcher.BrowserLauncher.is_cdp_alive",
+        "colonium.browser.launcher.BrowserLauncher.is_cdp_alive",
         lambda self, port: False,
     )
     req = CouncilJobRequest(
@@ -460,13 +460,13 @@ def test_orchestrator_normalizes_service_order(tmp_colonia, monkeypatch):
     ]
 
 
-def test_capabilities_describe_tool_defaults(tmp_colonia):
-    from colonia.capabilities import build_capabilities
+def test_capabilities_describe_tool_defaults(tmp_colonium):
+    from colonium.capabilities import build_capabilities
 
-    _, cfg = tmp_colonia
+    _, cfg = tmp_colonium
     data = build_capabilities(cfg)
 
-    assert data["tool"] == "colonia"
+    assert data["tool"] == "colonium"
     assert data["service_order"] == [
         "gemini",
         "claude",
@@ -494,8 +494,8 @@ def test_capabilities_describe_tool_defaults(tmp_colonia):
     assert data["model_plan"]["chatgpt"]["desired_assignments"]["alpha"] == (
         "Deep research reserved/manual"
     )
-    assert data["commands"]["models_apply_gemini"] == "colonia models apply --service gemini"
-    assert data["commands"]["ask_progress"] == "colonia ask -p '<prompt>' --browser all --progress"
+    assert data["commands"]["models_apply_gemini"] == "colonium models apply --service gemini"
+    assert data["commands"]["ask_progress"] == "colonium ask -p '<prompt>' --browser all --progress"
     assert "responses[].artifacts_received[]" in data["artifact_handling"]["result_fields"]
     assert "code-block-XX" in data["artifact_handling"]["code_block_artifacts"]
     assert "report.md" in data["artifact_handling"]["markdown_outputs"][0]
@@ -510,7 +510,7 @@ def test_capabilities_describe_tool_defaults(tmp_colonia):
 
 
 def test_mcp_health_payload_uses_browser_launcher(monkeypatch):
-    from colonia import mcp_server
+    from colonium import mcp_server
 
     expected = [{"name": "beta", "cdp_alive": True}]
 
@@ -518,23 +518,23 @@ def test_mcp_health_payload_uses_browser_launcher(monkeypatch):
         def health(self):
             return expected
 
-    monkeypatch.setattr("colonia.browser.launcher.BrowserLauncher", FakeLauncher)
+    monkeypatch.setattr("colonium.browser.launcher.BrowserLauncher", FakeLauncher)
 
     assert mcp_server.health_payload() == expected
 
 
 def test_mcp_server_import_is_lazy_without_sdk():
-    from colonia import mcp_server
+    from colonium import mcp_server
 
     parser = mcp_server.build_parser()
     args = parser.parse_args([])
     assert args.transport == "stdio"
 
 
-def test_mcp_model_payload_helpers(tmp_colonia):
-    from colonia import mcp_server
+def test_mcp_model_payload_helpers(tmp_colonium):
+    from colonium import mcp_server
 
-    _, cfg = tmp_colonia
+    _, cfg = tmp_colonium
     rows = mcp_server.model_plan_payload(service="claude", browsers=["beta"])
 
     assert rows == [
@@ -559,10 +559,10 @@ def test_mcp_model_payload_helpers(tmp_colonia):
     assert cfg.data_dir.exists()
 
 
-def test_model_plan_includes_claude_verified_assignments(tmp_colonia):
-    from colonia.model_settings import model_plan
+def test_model_plan_includes_claude_verified_assignments(tmp_colonium):
+    from colonium.model_settings import model_plan
 
-    _, cfg = tmp_colonia
+    _, cfg = tmp_colonium
     rows = model_plan(service="claude", cfg=cfg)
     by_browser = {row["browser"]: row for row in rows}
 
@@ -573,10 +573,10 @@ def test_model_plan_includes_claude_verified_assignments(tmp_colonia):
     assert "extended" in by_browser["zeta"]["note"]
 
 
-def test_model_plan_includes_gemini_verified_assignments(tmp_colonia):
-    from colonia.model_settings import model_plan
+def test_model_plan_includes_gemini_verified_assignments(tmp_colonium):
+    from colonium.model_settings import model_plan
 
-    _, cfg = tmp_colonia
+    _, cfg = tmp_colonium
     rows = model_plan(service="gemini", cfg=cfg)
     by_browser = {row["browser"]: row for row in rows}
 
@@ -586,10 +586,10 @@ def test_model_plan_includes_gemini_verified_assignments(tmp_colonia):
     assert by_browser["eta"]["effort"] == "Extended"
 
 
-def test_model_apply_dry_run_for_claude(tmp_colonia):
-    from colonia.model_settings import apply_models
+def test_model_apply_dry_run_for_claude(tmp_colonium):
+    from colonium.model_settings import apply_models
 
-    _, cfg = tmp_colonia
+    _, cfg = tmp_colonium
     rows = apply_models(service="claude", browsers=["beta", "epsilon"], dry_run=True, cfg=cfg)
 
     assert [row["status"] for row in rows] == ["planned", "planned"]
@@ -597,18 +597,18 @@ def test_model_apply_dry_run_for_claude(tmp_colonia):
     assert rows[1]["assignment"]["thinking"] is True
 
 
-def test_model_apply_reports_unsupported_for_unverified_services(tmp_colonia):
-    from colonia.model_settings import apply_models
+def test_model_apply_reports_unsupported_for_unverified_services(tmp_colonium):
+    from colonium.model_settings import apply_models
 
-    _, cfg = tmp_colonia
+    _, cfg = tmp_colonium
     with pytest.raises(ValueError, match="Unknown service"):
         apply_models(service="unknown", browsers=["beta"], dry_run=False, cfg=cfg)
 
 
-def test_chatgpt_model_apply_dry_run_marks_profile_lanes_runtime_supported(tmp_colonia):
-    from colonia.model_settings import apply_models
+def test_chatgpt_model_apply_dry_run_marks_profile_lanes_runtime_supported(tmp_colonium):
+    from colonium.model_settings import apply_models
 
-    _, cfg = tmp_colonia
+    _, cfg = tmp_colonium
     rows = apply_models(
         service="chatgpt",
         browsers=["beta", "epsilon"],
@@ -621,17 +621,17 @@ def test_chatgpt_model_apply_dry_run_marks_profile_lanes_runtime_supported(tmp_c
     assert "Runtime prompt profile" in rows[1]["assignment"]["note"]
 
 
-def test_chatgpt_runtime_profile_apply_does_not_need_browser_cdp(tmp_colonia):
-    from colonia.model_settings import apply_models
+def test_chatgpt_runtime_profile_apply_does_not_need_browser_cdp(tmp_colonium):
+    from colonium.model_settings import apply_models
 
-    _, cfg = tmp_colonia
+    _, cfg = tmp_colonium
     rows = apply_models(service="chatgpt", browsers=["epsilon", "eta", "theta"], cfg=cfg)
 
     assert [row["status"] for row in rows] == ["applied", "applied", "applied"]
 
 
 def test_chatgpt_prompt_profiles_are_injected():
-    from colonia.prompt_profiles import apply_prompt_profile, prompt_profile_name
+    from colonium.prompt_profiles import apply_prompt_profile, prompt_profile_name
 
     profiled = apply_prompt_profile("Summarize this.", browser="epsilon", service="chatgpt")
 
@@ -643,10 +643,10 @@ def test_chatgpt_prompt_profiles_are_injected():
     )
 
 
-def test_grok_and_perplexity_model_plans_are_per_browser(tmp_colonia):
-    from colonia.model_settings import model_plan
+def test_grok_and_perplexity_model_plans_are_per_browser(tmp_colonium):
+    from colonium.model_settings import model_plan
 
-    _, cfg = tmp_colonia
+    _, cfg = tmp_colonium
     grok = {row["browser"]: row for row in model_plan(service="grok", cfg=cfg)}
     perplexity = {row["browser"]: row for row in model_plan(service="perplexity", cfg=cfg)}
 
@@ -656,10 +656,10 @@ def test_grok_and_perplexity_model_plans_are_per_browser(tmp_colonia):
     assert perplexity["epsilon"]["effort"] == "Deep research"
 
 
-def test_model_browser_all_expands_and_unknown_rejected(tmp_colonia):
-    from colonia.model_settings import apply_models, model_plan
+def test_model_browser_all_expands_and_unknown_rejected(tmp_colonium):
+    from colonium.model_settings import apply_models, model_plan
 
-    _, cfg = tmp_colonia
+    _, cfg = tmp_colonium
     planned = model_plan(service="claude", browsers=["all"], cfg=cfg)
     applied = apply_models(service="claude", browsers=["all"], dry_run=True, cfg=cfg)
 
@@ -670,7 +670,7 @@ def test_model_browser_all_expands_and_unknown_rejected(tmp_colonia):
 
 
 def test_cli_models_apply_dry_run_parses():
-    from colonia.cli import build_parser
+    from colonium.cli import build_parser
 
     parser = build_parser()
     args = parser.parse_args(["models", "apply", "--service", "claude", "--dry-run"])
@@ -681,11 +681,11 @@ def test_cli_models_apply_dry_run_parses():
 
 
 # 19
-def test_desktop_manager_effective_display_current(tmp_colonia, monkeypatch):
-    from colonia.desktop.linux import LinuxDesktopManager
-    from colonia.models import DesktopMode
+def test_desktop_manager_effective_display_current(tmp_colonium, monkeypatch):
+    from colonium.desktop.linux import LinuxDesktopManager
+    from colonium.models import DesktopMode
 
-    _, cfg = tmp_colonia
+    _, cfg = tmp_colonium
     cfg.desktop.mode = DesktopMode.CURRENT
     monkeypatch.setenv("DISPLAY", ":99")
     mgr = LinuxDesktopManager(cfg)
@@ -701,24 +701,24 @@ def test_session_delete_binding(session_db):
 
 # 21
 def test_thinking_placeholder_detection():
-    from colonia.placeholders import is_thinking_placeholder
+    from colonium.placeholders import is_thinking_placeholder
 
     assert is_thinking_placeholder("Thinking about your request")
     assert is_thinking_placeholder("Searching...")
     assert is_thinking_placeholder("")
-    assert not is_thinking_placeholder("COLONIA_OK — the council is ready.")
+    assert not is_thinking_placeholder("COLONIUM_OK — the council is ready.")
     assert not is_thinking_placeholder("Here is a detailed answer about wave orchestration.")
 
 
 # 22
-def test_orchestrator_uses_wave_metadata(tmp_colonia, monkeypatch):
-    from colonia.orchestrator import CouncilOrchestrator
+def test_orchestrator_uses_wave_metadata(tmp_colonium, monkeypatch):
+    from colonium.orchestrator import CouncilOrchestrator
 
-    _, cfg = tmp_colonia
+    _, cfg = tmp_colonium
     cfg.use_wave = True
     orch = CouncilOrchestrator(cfg)
     monkeypatch.setattr(
-        "colonia.browser.launcher.BrowserLauncher.is_cdp_alive",
+        "colonium.browser.launcher.BrowserLauncher.is_cdp_alive",
         lambda self, port: False,
     )
     req = CouncilJobRequest(
@@ -806,7 +806,7 @@ class FakeOverlayPage:
         self.filled = ""
 
     def evaluate(self, script, arg=None):
-        if "COLONIA_SAFE_DISMISS" in script:
+        if "COLONIUM_SAFE_DISMISS" in script:
             self.overlay_dismissed = True
             return 1
         raise AssertionError(f"unexpected page evaluate: {script[:80]}")
@@ -821,7 +821,7 @@ class FakeOverlayPage:
 
 
 def test_common_overlay_dismiss_makes_input_visible_before_ready():
-    from colonia.adapters.dom import ChatGPTAdapter
+    from colonium.adapters.dom import ChatGPTAdapter
 
     page = FakeOverlayPage()
 
@@ -830,13 +830,13 @@ def test_common_overlay_dismiss_makes_input_visible_before_ready():
 
 
 def test_send_dismisses_overlay_before_finding_input():
-    from colonia.adapters.dom import ChatGPTAdapter
+    from colonium.adapters.dom import ChatGPTAdapter
 
     page = FakeOverlayPage()
-    ChatGPTAdapter().send(cast(Any, page), "COLONIA_OK")
+    ChatGPTAdapter().send(cast(Any, page), "COLONIUM_OK")
 
     assert page.overlay_dismissed is True
-    assert page.filled == "COLONIA_OK"
+    assert page.filled == "COLONIUM_OK"
     assert "Enter" in page.keyboard.presses
 
 
@@ -862,8 +862,8 @@ class FakeContext:
 
 
 def test_get_service_page_reuses_login_tab_instead_of_creating_new_tab():
-    from colonia.adapters.dom import ChatGPTAdapter
-    from colonia.runner import _get_service_page
+    from colonium.adapters.dom import ChatGPTAdapter
+    from colonium.runner import _get_service_page
 
     existing = FakePage("https://chatgpt.com/login")
     ctx = FakeContext([existing])
@@ -875,8 +875,8 @@ def test_get_service_page_reuses_login_tab_instead_of_creating_new_tab():
 
 
 def test_get_service_page_keeps_one_tab_per_service_and_closes_duplicates():
-    from colonia.adapters.dom import GeminiAdapter
-    from colonia.runner import _get_service_page
+    from colonium.adapters.dom import GeminiAdapter
+    from colonium.runner import _get_service_page
 
     selected = FakePage("https://gemini.google.com/app/thread-a")
     duplicate = FakePage("https://gemini.google.com/app/thread-b")
@@ -892,8 +892,8 @@ def test_get_service_page_keeps_one_tab_per_service_and_closes_duplicates():
 
 
 def test_get_service_page_prefers_chat_thread_over_service_home():
-    from colonia.adapters.grok import GrokAdapter
-    from colonia.runner import _get_service_page
+    from colonium.adapters.grok import GrokAdapter
+    from colonium.runner import _get_service_page
 
     home = FakePage("https://grok.com/")
     thread = FakePage("https://grok.com/c/thread-id")
@@ -907,8 +907,8 @@ def test_get_service_page_prefers_chat_thread_over_service_home():
 
 
 def test_open_task_page_uses_fresh_tab_without_session():
-    from colonia.adapters.dom import ClaudeAdapter
-    from colonia.runner import _open_task_page
+    from colonium.adapters.dom import ClaudeAdapter
+    from colonium.runner import _open_task_page
 
     existing = FakePage("https://claude.ai/chat/thread-id")
     ctx = FakeContext([existing])
@@ -921,8 +921,8 @@ def test_open_task_page_uses_fresh_tab_without_session():
 
 
 def test_open_task_page_reuses_service_tab_for_session_continuation():
-    from colonia.adapters.dom import ChatGPTAdapter
-    from colonia.runner import _open_task_page
+    from colonium.adapters.dom import ChatGPTAdapter
+    from colonium.runner import _open_task_page
 
     existing = FakePage("https://chatgpt.com/c/thread-id")
     ctx = FakeContext([existing])
@@ -953,7 +953,7 @@ def test_alpha_cdp_health_if_running():
 
 # Integration: live ask on alpha (optional, requires login)
 @pytest.mark.integration
-def test_live_ask_alpha_perplexity_session(tmp_colonia):
+def test_live_ask_alpha_perplexity_session(tmp_colonium):
     import urllib.error
     import urllib.request
 
@@ -962,13 +962,13 @@ def test_live_ask_alpha_perplexity_session(tmp_colonia):
     except (urllib.error.URLError, TimeoutError):
         pytest.skip("alpha CDP not running")
 
-    from colonia.orchestrator import CouncilOrchestrator
+    from colonium.orchestrator import CouncilOrchestrator
 
-    _, cfg = tmp_colonia
+    _, cfg = tmp_colonium
     sid = f"test-{uuid.uuid4().hex[:8]}"
     orch = CouncilOrchestrator(cfg)
     req = CouncilJobRequest(
-        prompt="Reply with exactly the word: COLONIA_OK",
+        prompt="Reply with exactly the word: COLONIUM_OK",
         session_id=sid,
         browsers=["alpha"],
         services=[ServiceName.PERPLEXITY],

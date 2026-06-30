@@ -6,11 +6,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
-from colonia.config import load_config
-from colonia.consolidator import write_job_artifacts
-from colonia.models import (
+from colonium.config import load_config
+from colonium.consolidator import write_job_artifacts
+from colonium.models import (
     BrowserInstance,
-    ColoniaConfig,
+    ColoniumConfig,
     CouncilJobRequest,
     CouncilJobResult,
     CouncilJobSummary,
@@ -19,15 +19,15 @@ from colonia.models import (
     TaskStatus,
     order_services,
 )
-from colonia.pools import BrowserPoolManager, is_rate_limit_error
-from colonia.sessions import SessionStore
+from colonium.pools import BrowserPoolManager, is_rate_limit_error
+from colonium.sessions import SessionStore
 
 
 ProgressCallback = Callable[[dict[str, Any]], None]
 
 
 class CouncilOrchestrator:
-    def __init__(self, cfg: ColoniaConfig | None = None):
+    def __init__(self, cfg: ColoniumConfig | None = None):
         self.cfg = cfg or load_config()
         self.pools = BrowserPoolManager(self.cfg)
         self.sessions = SessionStore()
@@ -47,14 +47,14 @@ class CouncilOrchestrator:
         launcher,
         artifact_root: Path,
     ) -> CouncilResponse:
-        from colonia.runner import run_single_task
+        from colonium.runner import run_single_task
 
         if not launcher.is_cdp_alive(browser.cdp_port):
             return CouncilResponse(
                 browser=browser.name,
                 service=service.value,
                 status=TaskStatus.SKIPPED,
-                error=f"CDP not alive on port {browser.cdp_port}. Run: colonia browsers launch",
+                error=f"CDP not alive on port {browser.cdp_port}. Run: colonium browsers launch",
             )
 
         resp = run_single_task(
@@ -103,8 +103,8 @@ class CouncilOrchestrator:
         launcher,
         artifact_root: Path,
     ) -> list[CouncilResponse]:
-        from colonia.runner import run_single_task
-        from colonia.wave import run_browser_wave
+        from colonium.runner import run_single_task
+        from colonium.wave import run_browser_wave
 
         if not launcher.is_cdp_alive(browser.cdp_port):
             return [
@@ -112,7 +112,7 @@ class CouncilOrchestrator:
                     browser=browser.name,
                     service=s.value,
                     status=TaskStatus.SKIPPED,
-                    error=f"CDP not alive on port {browser.cdp_port}. Run: colonia browsers launch",
+                    error=f"CDP not alive on port {browser.cdp_port}. Run: colonium browsers launch",
                 )
                 for s in services
             ]
@@ -212,7 +212,7 @@ class CouncilOrchestrator:
         summary = CouncilJobSummary(total_tasks=len(browsers) * len(services))
         progress_events: list[dict[str, Any]] = []
 
-        from colonia.browser.launcher import BrowserLauncher
+        from colonium.browser.launcher import BrowserLauncher
 
         launcher = BrowserLauncher(self.cfg)
 

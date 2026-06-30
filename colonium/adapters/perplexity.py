@@ -4,8 +4,8 @@ from pathlib import Path
 
 from playwright.sync_api import Page
 
-from colonia.adapters.base import ChatAdapter, DomSelectors
-from colonia.models import ServiceName, TaskStatus
+from colonium.adapters.base import ChatAdapter, DomSelectors
+from colonium.models import ServiceName, TaskStatus
 
 BASE_URL = "https://www.perplexity.ai"
 

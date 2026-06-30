@@ -2,18 +2,19 @@ from __future__ import annotations
 
 import argparse
 import os
+import sys
 import types
 from pathlib import Path
 from typing import Any, cast
 
 import pytest
 
-from colonia.adapters.base import ChatAdapter, DomSelectors
-from colonia.adapters.dom import GeminiAdapter
-from colonia.adapters.grok import GrokAdapter
-from colonia.adapters.perplexity import PerplexityAdapter
-from colonia.config import default_config
-from colonia.models import (
+from colonium.adapters.base import ChatAdapter, DomSelectors
+from colonium.adapters.dom import GeminiAdapter
+from colonium.adapters.grok import GrokAdapter
+from colonium.adapters.perplexity import PerplexityAdapter
+from colonium.config import default_config
+from colonium.models import (
     ArtifactRecord,
     BrowserInstance,
     CouncilJobRequest,
@@ -146,7 +147,7 @@ class AdapterPage:
         self.waits.append(ms)
 
     def evaluate(self, script: str, arg: Any = None) -> Any:
-        if "COLONIA_SAFE_DISMISS" in script:
+        if "COLONIUM_SAFE_DISMISS" in script:
             self.dismiss_calls += 1
             return 1 if self.dismiss_calls == 1 else 0
         if "document.querySelector(s)" in script:
@@ -254,8 +255,8 @@ def test_grok_adapter_send_extract_and_poll() -> None:
 
 
 def test_runner_tab_helpers_close_duplicates() -> None:
-    from colonia.adapters.dom import ChatGPTAdapter
-    from colonia.runner import (
+    from colonium.adapters.dom import ChatGPTAdapter
+    from colonium.runner import (
         _close_duplicate_service_tabs,
         _ensure_service_page_loaded,
         _is_service_tab,
@@ -313,7 +314,7 @@ def test_runner_tab_helpers_close_duplicates() -> None:
 
 
 def test_browser_launcher_reuses_existing_and_reports_health(tmp_path: Path) -> None:
-    from colonia.browser.launcher import BrowserLauncher
+    from colonium.browser.launcher import BrowserLauncher
 
     cfg = default_config()
     cfg.data_dir = tmp_path
@@ -329,10 +330,55 @@ def test_browser_launcher_reuses_existing_and_reports_health(tmp_path: Path) -> 
     assert launcher.health()[0]["cdp_alive"] is True
 
 
+def test_default_desktop_config_uses_current_mode_off_linux(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from colonium import models
+
+    monkeypatch.setattr(models.sys, "platform", "darwin")
+
+    cfg = models.DesktopConfig()
+
+    assert cfg.mode == DesktopMode.CURRENT
+    assert cfg.chrome_binary.endswith("Google Chrome")
+
+
+def test_desktop_manager_factory_uses_current_manager_off_linux(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from colonium.desktop.manager import CurrentDesktopManager, create_desktop_manager
+
+    cfg = default_config()
+    cfg.data_dir = tmp_path
+    cfg.desktop.mode = DesktopMode.CURRENT
+    monkeypatch.setattr("colonium.desktop.manager.sys.platform", "darwin")
+    monkeypatch.delenv("DISPLAY", raising=False)
+
+    mgr = create_desktop_manager(cfg)
+    state = mgr.start()
+
+    assert isinstance(mgr, CurrentDesktopManager)
+    assert state.mode == DesktopMode.CURRENT
+    assert "DISPLAY" not in mgr.browser_env()
+    assert mgr.status()["running"] is True
+
+
+def test_current_desktop_manager_rejects_linux_only_modes(tmp_path: Path) -> None:
+    from colonium.desktop.manager import CurrentDesktopManager
+
+    cfg = default_config()
+    cfg.data_dir = tmp_path
+    cfg.desktop.mode = DesktopMode.XEPHYR
+    mgr = CurrentDesktopManager(cfg)
+
+    with pytest.raises(RuntimeError, match="only supported on Linux"):
+        mgr.start()
+
+
 def test_browser_launcher_launch_stop_and_cdp_probe(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from colonia.browser.launcher import BrowserLauncher
+    from colonium.browser.launcher import BrowserLauncher
 
     cfg = default_config()
     cfg.data_dir = tmp_path
@@ -376,7 +422,7 @@ def test_browser_launcher_launch_stop_and_cdp_probe(
 def test_browser_launcher_errors_and_cdp_status(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from colonia.browser.launcher import BrowserLauncher
+    from colonium.browser.launcher import BrowserLauncher
 
     cfg = default_config()
     cfg.data_dir = tmp_path
@@ -415,7 +461,7 @@ def test_browser_launcher_errors_and_cdp_status(
 
 
 def test_desktop_manager_modes_and_status(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    from colonia.desktop.linux import DesktopState, LinuxDesktopManager
+    from colonium.desktop.linux import DesktopState, LinuxDesktopManager
 
     cfg = default_config()
     cfg.data_dir = tmp_path
@@ -450,7 +496,7 @@ def test_desktop_manager_modes_and_status(tmp_path: Path, monkeypatch: pytest.Mo
 def test_desktop_workspace_and_xephyr_errors(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from colonia.desktop.linux import LinuxDesktopManager
+    from colonium.desktop.linux import LinuxDesktopManager
 
     cfg = default_config()
     cfg.data_dir = tmp_path
@@ -477,8 +523,8 @@ def test_desktop_workspace_and_xephyr_errors(
 def test_wave_prepare_poll_settle_and_collect(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from colonia import wave
-    from colonia.sessions import SessionStore
+    from colonium import wave
+    from colonium.sessions import SessionStore
 
     class Page:
         url = "https://chat.example/thread"
@@ -549,7 +595,7 @@ def test_wave_prepare_poll_settle_and_collect(
     assert slept == [1.0]
 
     monkeypatch.setattr(
-        "colonia.runner._collect_response_artifacts",
+        "colonium.runner._collect_response_artifacts",
         lambda *args, **kwargs: [
             ArtifactRecord(
                 source="link",
@@ -575,8 +621,8 @@ def test_wave_prepare_poll_settle_and_collect(
 
 
 def test_wave_collects_non_done_and_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
-    from colonia import wave
-    from colonia.sessions import SessionStore
+    from colonium import wave
+    from colonium.sessions import SessionStore
 
     class Page:
         url = "https://chat.example/thread"
@@ -640,8 +686,8 @@ def test_wave_collects_non_done_and_timeout(monkeypatch: pytest.MonkeyPatch) -> 
 def test_orchestrator_failover_and_non_wave_paths(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from colonia.orchestrator import CouncilOrchestrator
-    from colonia.sessions import SessionStore
+    from colonium.orchestrator import CouncilOrchestrator
+    from colonium.sessions import SessionStore
 
     cfg = default_config()
     cfg.data_dir = tmp_path
@@ -671,7 +717,7 @@ def test_orchestrator_failover_and_non_wave_paths(
             text="ok",
         )
 
-    monkeypatch.setattr("colonia.runner.run_single_task", fake_run_single_task)
+    monkeypatch.setattr("colonium.runner.run_single_task", fake_run_single_task)
     response = orch._run_task_with_failover(
         cfg.browsers[0],
         ServiceName.CLAUDE,
@@ -687,7 +733,7 @@ def test_orchestrator_failover_and_non_wave_paths(
     def raise_not_implemented(**kwargs: Any) -> CouncilResponse:
         raise NotImplementedError("not ready")
 
-    monkeypatch.setattr("colonia.runner.run_single_task", raise_not_implemented)
+    monkeypatch.setattr("colonium.runner.run_single_task", raise_not_implemented)
     batch = orch._run_browser_wave(
         cfg.browsers[1],
         [ServiceName.GEMINI],
@@ -700,7 +746,7 @@ def test_orchestrator_failover_and_non_wave_paths(
 
 
 def test_mcp_payloads_and_fake_server(monkeypatch: pytest.MonkeyPatch) -> None:
-    from colonia import mcp_server
+    from colonium import mcp_server
 
     class FakeOrchestrator:
         def run(self, request: CouncilJobRequest) -> Any:
@@ -711,7 +757,7 @@ def test_mcp_payloads_and_fake_server(monkeypatch: pytest.MonkeyPatch) -> None:
                 }
             )
 
-    monkeypatch.setattr("colonia.orchestrator.CouncilOrchestrator", FakeOrchestrator)
+    monkeypatch.setattr("colonium.orchestrator.CouncilOrchestrator", FakeOrchestrator)
     payload = mcp_server.run_ask_payload(prompt="hi", services=["claude"], browsers=["beta"])
     assert payload["metadata"]["services"] == ["claude"]
 
@@ -739,18 +785,27 @@ def test_mcp_payloads_and_fake_server(monkeypatch: pytest.MonkeyPatch) -> None:
         def run(self, transport: str) -> None:
             self.ran = transport
 
-    monkeypatch.setattr("mcp.server.fastmcp.FastMCP", FakeFastMCP)
+    mcp_module = types.ModuleType("mcp")
+    server_module = types.ModuleType("mcp.server")
+    fastmcp_module = types.ModuleType("mcp.server.fastmcp")
+    fastmcp_module.FastMCP = FakeFastMCP  # type: ignore[attr-defined]
+    server_module.fastmcp = fastmcp_module  # type: ignore[attr-defined]
+    mcp_module.server = server_module  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "mcp", mcp_module)
+    monkeypatch.setitem(sys.modules, "mcp.server", server_module)
+    monkeypatch.setitem(sys.modules, "mcp.server.fastmcp", fastmcp_module)
+
     server = cast(Any, mcp_server.create_mcp_server())
 
-    assert server.name == "Colonia"
-    assert "colonia://capabilities" in server.resources
-    assert "colonia_ask" in server.tools
+    assert server.name == "Colonium"
+    assert "colonium://capabilities" in server.resources
+    assert "colonium_ask" in server.tools
 
 
 def test_model_apply_service_and_ui_helpers(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from colonia import model_settings as ms
+    from colonium import model_settings as ms
 
     cfg = default_config()
     cfg.data_dir = tmp_path
@@ -799,7 +854,7 @@ class ModelPage:
 
 
 def test_model_assignment_wrappers(monkeypatch: pytest.MonkeyPatch) -> None:
-    from colonia import model_settings as ms
+    from colonium import model_settings as ms
 
     calls: list[tuple[str, str]] = []
     monkeypatch.setattr(
@@ -834,7 +889,7 @@ def test_model_assignment_wrappers(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_model_ui_helper_success_paths() -> None:
-    from colonia import model_settings as ms
+    from colonium import model_settings as ms
 
     page = ModelPage()
     page.locator_overrides["[data-testid='model-selector-dropdown']"] = LocatorSpy(attr="false")
@@ -857,7 +912,7 @@ def test_model_ui_helper_success_paths() -> None:
 
 
 def test_model_ui_helper_failure_paths() -> None:
-    from colonia import model_settings as ms
+    from colonium import model_settings as ms
 
     class FilterFailLocator(LocatorSpy):
         def filter(self, has_text: str) -> LocatorSpy:
@@ -918,7 +973,7 @@ def test_model_ui_helper_failure_paths() -> None:
 def test_apply_service_handles_browser_outcomes(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from colonia import model_settings as ms
+    from colonium import model_settings as ms
 
     cfg = default_config()
     cfg.data_dir = tmp_path
@@ -948,7 +1003,7 @@ def test_apply_service_handles_browser_outcomes(
             return None
 
     monkeypatch.setattr("playwright.sync_api.sync_playwright", lambda: PlaywrightContext())
-    monkeypatch.setattr("colonia.runner._get_service_page", lambda ctx, adapter: object())
+    monkeypatch.setattr("colonium.runner._get_service_page", lambda ctx, adapter: object())
     monkeypatch.setattr(ms, "_apply_claude_assignment", lambda page, assignment: ["warn"])
 
     rows = ms._apply_service(assignments, cfg, "claude")
@@ -961,7 +1016,7 @@ def test_apply_service_handles_browser_outcomes(
 
 
 def test_cli_commands_with_fakes(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    from colonia import cli
+    from colonium import cli
 
     cfg = default_config()
     cfg.data_dir = tmp_path
@@ -997,8 +1052,8 @@ def test_cli_commands_with_fakes(monkeypatch: pytest.MonkeyPatch, tmp_path: Path
         def health(self) -> list[dict[str, Any]]:
             return [{"name": "alpha"}]
 
-    monkeypatch.setattr("colonia.desktop.linux.LinuxDesktopManager", Desktop)
-    monkeypatch.setattr("colonia.browser.launcher.BrowserLauncher", Launcher)
+    monkeypatch.setattr("colonium.desktop.linux.LinuxDesktopManager", Desktop)
+    monkeypatch.setattr("colonium.browser.launcher.BrowserLauncher", Launcher)
 
     assert (
         cli.cmd_desktop_start(
@@ -1014,12 +1069,12 @@ def test_cli_commands_with_fakes(monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     assert cli.cmd_browsers_stop(argparse.Namespace()) == 0
     assert cli.cmd_browsers_health(argparse.Namespace()) == 0
 
-    monkeypatch.setattr("colonia.capabilities.build_capabilities", lambda: {"service_order": []})
+    monkeypatch.setattr("colonium.capabilities.build_capabilities", lambda: {"service_order": []})
     assert cli.cmd_capabilities(argparse.Namespace(json=True)) == 0
 
 
 def test_cli_ask_and_main_error_paths(monkeypatch: pytest.MonkeyPatch) -> None:
-    from colonia import cli
+    from colonium import cli
 
     class FakeOrchestrator:
         def run(self, request: CouncilJobRequest) -> Any:
@@ -1028,7 +1083,7 @@ def test_cli_ask_and_main_error_paths(monkeypatch: pytest.MonkeyPatch) -> None:
                 artifacts={"markdown": "m.md", "json": "r.json", "artifact_dir": "a"},
             )
 
-    monkeypatch.setattr("colonia.orchestrator.CouncilOrchestrator", FakeOrchestrator)
+    monkeypatch.setattr("colonium.orchestrator.CouncilOrchestrator", FakeOrchestrator)
     args = argparse.Namespace(
         service="claude,chatgpt",
         browser="alpha,beta",

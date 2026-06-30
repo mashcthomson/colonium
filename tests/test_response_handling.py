@@ -5,8 +5,8 @@ import json
 from pathlib import Path
 from typing import Any, cast
 
-from colonia.config import default_config
-from colonia.models import (
+from colonium.config import default_config
+from colonium.models import (
     ArtifactRecord,
     BrowserInstance,
     CouncilJobRequest,
@@ -19,7 +19,7 @@ from colonia.models import (
 
 
 def test_chatgpt_ad_tail_is_removed_and_unclosed_code_fence_is_closed() -> None:
-    from colonia.text import clean_model_label, normalize_response_markdown
+    from colonium.text import clean_model_label, normalize_response_markdown
 
     raw = """Here is the answer.
 
@@ -40,7 +40,7 @@ Upgrade to Plus
 
 
 def test_common_adapter_extracts_markdown_code_blocks_from_dom() -> None:
-    from colonia.adapters.base import ChatAdapter, DomSelectors
+    from colonium.adapters.base import ChatAdapter, DomSelectors
 
     class Adapter(ChatAdapter):
         service = ServiceName.CHATGPT
@@ -62,7 +62,7 @@ def test_common_adapter_extracts_markdown_code_blocks_from_dom() -> None:
 
 
 def test_fenced_code_blocks_are_saved_as_artifacts(tmp_path: Path) -> None:
-    from colonia.artifacts import collect_code_artifacts
+    from colonium.artifacts import collect_code_artifacts
 
     text = """Use this:
 
@@ -88,7 +88,7 @@ And this:
 
 
 def test_runner_collects_link_and_code_artifacts(tmp_path: Path, monkeypatch) -> None:
-    from colonia.runner import _collect_response_artifacts
+    from colonium.runner import _collect_response_artifacts
 
     link_record = ArtifactRecord(
         source="link",
@@ -96,7 +96,7 @@ def test_runner_collects_link_and_code_artifacts(tmp_path: Path, monkeypatch) ->
         path=str(tmp_path / "answer.pdf"),
         size_bytes=1,
     )
-    monkeypatch.setattr("colonia.artifacts.collect_page_artifacts", lambda **kwargs: [link_record])
+    monkeypatch.setattr("colonium.artifacts.collect_page_artifacts", lambda **kwargs: [link_record])
 
     page = object()
     records = _collect_response_artifacts(
@@ -111,7 +111,7 @@ def test_runner_collects_link_and_code_artifacts(tmp_path: Path, monkeypatch) ->
 
 
 def test_consolidator_writes_clean_markdown_and_code_artifact_links(tmp_path: Path) -> None:
-    from colonia.consolidator import job_to_markdown, write_job_artifacts
+    from colonium.consolidator import job_to_markdown, write_job_artifacts
 
     cfg = default_config()
     cfg.data_dir = tmp_path
@@ -150,7 +150,7 @@ def test_consolidator_writes_clean_markdown_and_code_artifact_links(tmp_path: Pa
 
 
 def test_chatgpt_auto_selects_deep_research_and_web_search() -> None:
-    from colonia.adapters.dom import ChatGPTAdapter, choose_chatgpt_tool
+    from colonium.adapters.dom import ChatGPTAdapter, choose_chatgpt_tool
 
     assert choose_chatgpt_tool("Please do deep research on this market") == "Deep research"
     assert choose_chatgpt_tool("What is the latest news on this?") == "Web search"
@@ -194,28 +194,28 @@ def test_chatgpt_auto_selects_deep_research_and_web_search() -> None:
 
 
 def test_gemini_extractor_serializes_code_block_elements() -> None:
-    from colonia.adapters.dom import _GEMINI_EXTRACT_JS
+    from colonium.adapters.dom import _GEMINI_EXTRACT_JS
 
     assert "querySelectorAll('code-block')" in _GEMINI_EXTRACT_JS
     assert "```" in _GEMINI_EXTRACT_JS
 
 
 def test_claude_extractor_strips_accessibility_heading_prefix() -> None:
-    from colonia.adapters.dom import ClaudeAdapter
+    from colonium.adapters.dom import ClaudeAdapter
 
     class Page:
         def evaluate(self, script: str, arg: Any = None) -> Any:
             assert "Claude responded:" in script
-            return ["COLONIA_OK", "Sonnet 4.6 Low"]
+            return ["COLONIUM_OK", "Sonnet 4.6 Low"]
 
     text, model = ClaudeAdapter().extract_since(cast(Any, Page()), 0)
 
-    assert text == "COLONIA_OK"
+    assert text == "COLONIUM_OK"
     assert model == "Sonnet 4.6 Low"
 
 
 def test_orchestrator_records_progress_events(tmp_path: Path, monkeypatch) -> None:
-    from colonia.orchestrator import CouncilOrchestrator
+    from colonium.orchestrator import CouncilOrchestrator
 
     cfg = default_config()
     cfg.data_dir = tmp_path
@@ -256,7 +256,7 @@ def test_orchestrator_records_progress_events(tmp_path: Path, monkeypatch) -> No
 
 
 def test_cli_progress_flag_prints_updates(monkeypatch, capsys) -> None:
-    from colonia import cli
+    from colonium import cli
 
     class FakeOrchestrator:
         def run(self, request: CouncilJobRequest, progress_callback: Any = None) -> Any:
@@ -280,7 +280,7 @@ def test_cli_progress_flag_prints_updates(monkeypatch, capsys) -> None:
                 },
             )()
 
-    monkeypatch.setattr("colonia.orchestrator.CouncilOrchestrator", FakeOrchestrator)
+    monkeypatch.setattr("colonium.orchestrator.CouncilOrchestrator", FakeOrchestrator)
 
     assert (
         cli.cmd_ask(

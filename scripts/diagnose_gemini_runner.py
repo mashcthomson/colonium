@@ -5,9 +5,9 @@ from __future__ import annotations
 
 import time
 
-from colonia.config import load_config
-from colonia.models import ServiceName
-from colonia.runner import run_single_task
+from colonium.config import load_config
+from colonium.models import ServiceName
+from colonium.runner import run_single_task
 
 
 def main():
@@ -17,7 +17,7 @@ def main():
     resp = run_single_task(
         browser=alpha,
         service=ServiceName.GEMINI,
-        prompt="Reply with exactly one word: COLONIA_OK",
+        prompt="Reply with exactly one word: COLONIUM_OK",
         files=[],
         fresh_chat=False,
         session_id=None,

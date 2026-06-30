@@ -1,5 +1,5 @@
-# Colonia runtime data (use ~/.colonia by default)
-.colonia/
+# Colonium runtime data (use ~/.colonium by default)
+.colonium/
 *.egg-info/
 __pycache__/
 .pytest_cache/

@@ -8,11 +8,11 @@ import time
 
 from playwright.sync_api import sync_playwright
 
-from colonia.adapters import get_adapter
-from colonia.models import ServiceName
-from colonia.placeholders import is_thinking_placeholder
+from colonium.adapters import get_adapter
+from colonium.models import ServiceName
+from colonium.placeholders import is_thinking_placeholder
 
-PROMPT = "Reply with exactly one word: COLONIA_OK (nothing else)."
+PROMPT = "Reply with exactly one word: COLONIUM_OK (nothing else)."
 CDP = "http://127.0.0.1:9222"
 
 

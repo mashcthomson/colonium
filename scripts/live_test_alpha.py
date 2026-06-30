@@ -11,12 +11,12 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
-from colonia.models import CouncilJobRequest, ServiceName, TaskStatus
-from colonia.orchestrator import CouncilOrchestrator
-from colonia.sessions import SessionStore
+from colonium.models import CouncilJobRequest, ServiceName, TaskStatus
+from colonium.orchestrator import CouncilOrchestrator
+from colonium.sessions import SessionStore
 
 
-PROMPT_FIRST = "Reply with exactly one word: COLONIA_OK (nothing else)."
+PROMPT_FIRST = "Reply with exactly one word: COLONIUM_OK (nothing else)."
 PROMPT_FOLLOWUP = "In one short sentence: what single word did I ask you to reply with?"
 TIMEOUT_MS = 180_000
 
@@ -51,9 +51,9 @@ class TestRun:
         }
 
 
-def _has_colonia_ok(text: str) -> bool:
+def _has_colonium_ok(text: str) -> bool:
     normalized = (text or "").lower().replace(" ", "").replace("-", "_")
-    return "colonia_ok" in normalized
+    return "colonium_ok" in normalized
 
 
 def _resp_text(result) -> str:
@@ -87,7 +87,7 @@ def test_service_first_message(
     ms = int((time.time() - t0) * 1000)
     status, err = _resp_status(result)
     text = _resp_text(result)
-    ok = status == TaskStatus.DONE and _has_colonia_ok(text)
+    ok = status == TaskStatus.DONE and _has_colonium_ok(text)
     run.record(
         f"1_new_session/{service.value}",
         ok,
@@ -116,12 +116,12 @@ def test_service_continue(
     status, err = _resp_status(result)
     text = _resp_text(result).lower()
     turn = result.metadata.get("turn_index", 0)
-    # follow-up should be turn 2+ and ideally mention COLONIA or OK
+    # follow-up should be turn 2+ and ideally mention COLONIUM or OK
     ok = (
         status == TaskStatus.DONE
         and turn >= 2
         and len(text) > 0
-        and ("colonia" in text or "ok" in text)
+        and ("colonium" in text or "ok" in text)
         and not text.strip().startswith("thinking")
     )
     run.record(
@@ -149,7 +149,7 @@ def test_service_fresh_chat(
     ms = int((time.time() - t0) * 1000)
     status, err = _resp_status(result)
     text = _resp_text(result)
-    ok = status == TaskStatus.DONE and _has_colonia_ok(text)
+    ok = status == TaskStatus.DONE and _has_colonium_ok(text)
     run.record(
         f"3_fresh_chat/{service.value}",
         ok,
@@ -222,7 +222,7 @@ def test_all_services_parallel_session(run: TestRun, orch: CouncilOrchestrator) 
     auth = result.summary.auth_required
     failed = result.summary.failed
     ok = ok_count == len(ServiceName) and all(
-        _has_colonia_ok(r.text or "") for r in result.responses if r.status == TaskStatus.DONE
+        _has_colonium_ok(r.text or "") for r in result.responses if r.status == TaskStatus.DONE
     )
     details = {r.service: r.status.value for r in result.responses}
     run.record(
@@ -270,7 +270,7 @@ def test_multi_service_turn3(run: TestRun, orch: CouncilOrchestrator, sid: str) 
 
 
 def main() -> int:
-    print(f"Colonia live alpha tests — {datetime.now(timezone.utc).isoformat()}", flush=True)
+    print(f"Colonium live alpha tests — {datetime.now(timezone.utc).isoformat()}", flush=True)
     run = TestRun()
     orch = CouncilOrchestrator()
 
@@ -296,7 +296,7 @@ def main() -> int:
         test_multi_service_turn3(run, orch, multi_sid)
 
     summary = run.summary()
-    runs_dir = Path.home() / ".colonia" / "runs"
+    runs_dir = Path.home() / ".colonium" / "runs"
     runs_dir.mkdir(parents=True, exist_ok=True)
     out_path = runs_dir / f"live-test-{int(time.time())}.json"
     payload = {

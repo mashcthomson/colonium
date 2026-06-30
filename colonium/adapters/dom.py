@@ -4,9 +4,9 @@ from pathlib import Path
 
 from playwright.sync_api import Page
 
-from colonia.adapters.base import ChatAdapter, DomSelectors
-from colonia.models import ServiceName, TaskStatus
-from colonia.text import normalize_response_markdown
+from colonium.adapters.base import ChatAdapter, DomSelectors
+from colonium.models import ServiceName, TaskStatus
+from colonium.text import normalize_response_markdown
 
 
 DEEP_RESEARCH_TRIGGERS = (

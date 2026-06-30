@@ -5,12 +5,12 @@ import time
 
 from playwright.sync_api import sync_playwright
 
-from colonia.adapters import get_adapter
-from colonia.config import load_config
-from colonia.models import ServiceName
-from colonia.runner import _get_service_page
+from colonium.adapters import get_adapter
+from colonium.config import load_config
+from colonium.models import ServiceName
+from colonium.runner import _get_service_page
 
-PROMPT = "Reply with exactly one word: COLONIA_OK"
+PROMPT = "Reply with exactly one word: COLONIUM_OK"
 
 
 def main():

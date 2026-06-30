@@ -1,5 +1,5 @@
 {
-  "include": ["colonia", "scripts", "tests"],
+  "include": ["colonium", "scripts", "tests"],
   "exclude": [
     ".venv",
     "build",

@@ -6,12 +6,12 @@ import time
 
 from playwright.sync_api import sync_playwright
 
-from colonia.adapters import get_adapter
-from colonia.models import ServiceName
+from colonium.adapters import get_adapter
+from colonium.models import ServiceName
 
 CDP = "http://127.0.0.1:9222"
 SERVICE = ServiceName(sys.argv[1] if len(sys.argv) > 1 else "chatgpt")
-PROMPT = "Reply with exactly: COLONIA_OK"
+PROMPT = "Reply with exactly: COLONIUM_OK"
 
 
 def main():

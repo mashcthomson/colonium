@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from colonia.models import ColoniaConfig, CouncilJobResult, CouncilResponse, TaskStatus
-from colonia.text import normalize_response_markdown
+from colonium.models import ColoniumConfig, CouncilJobResult, CouncilResponse, TaskStatus
+from colonium.text import normalize_response_markdown
 
 
 def response_to_markdown_block(resp: CouncilResponse) -> list[str]:
@@ -39,7 +39,7 @@ def job_to_markdown(result: CouncilJobResult) -> str:
     session_id = result.metadata.get("session_id")
     turn = result.metadata.get("turn_index")
     lines = [
-        "# Colonia Council Report",
+        "# Colonium Council Report",
         "",
         f"**Job:** `{result.job_id}`",
     ]
@@ -82,7 +82,7 @@ def job_to_markdown(result: CouncilJobResult) -> str:
     return "\n".join(lines)
 
 
-def write_job_artifacts(cfg: ColoniaConfig, result: CouncilJobResult) -> dict[str, str]:
+def write_job_artifacts(cfg: ColoniumConfig, result: CouncilJobResult) -> dict[str, str]:
     out_dir = cfg.runs_dir / result.job_id
     out_dir.mkdir(parents=True, exist_ok=True)
     json_path = out_dir / "result.json"

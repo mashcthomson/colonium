@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from typing import Any
 
-from colonia.config import load_config
-from colonia.models import BrowserInstance, ColoniaConfig
+from colonium.config import load_config
+from colonium.models import BrowserInstance, ColoniumConfig
 
 
 @dataclass(frozen=True)
@@ -125,32 +125,32 @@ CHATGPT_ASSIGNMENTS: dict[str, ModelAssignment] = {
         "epsilon",
         "chatgpt",
         "Profile instructions variant 1",
-        note="Runtime prompt profile injected by Colonia.",
+        note="Runtime prompt profile injected by Colonium.",
     ),
     "zeta": ModelAssignment("zeta", "chatgpt", "Deep research", note="Reserved/manual"),
     "eta": ModelAssignment(
         "eta",
         "chatgpt",
         "Profile instructions variant 2",
-        note="Runtime prompt profile injected by Colonia.",
+        note="Runtime prompt profile injected by Colonium.",
     ),
     "theta": ModelAssignment(
         "theta",
         "chatgpt",
         "Profile instructions variant 3",
-        note="Runtime prompt profile injected by Colonia.",
+        note="Runtime prompt profile injected by Colonium.",
     ),
 }
 
 
-def _enabled_browsers(cfg: ColoniaConfig) -> dict[str, BrowserInstance]:
+def _enabled_browsers(cfg: ColoniumConfig) -> dict[str, BrowserInstance]:
     return {browser.name: browser for browser in cfg.browsers if browser.enabled}
 
 
 def _resolve_browser_names(
     *,
     browsers: list[str] | None,
-    cfg: ColoniaConfig,
+    cfg: ColoniumConfig,
 ) -> list[str]:
     enabled = _enabled_browsers(cfg)
     enabled_names = list(enabled)
@@ -171,7 +171,7 @@ def model_plan(
     *,
     service: str | None = None,
     browsers: list[str] | None = None,
-    cfg: ColoniaConfig | None = None,
+    cfg: ColoniumConfig | None = None,
 ) -> list[dict[str, Any]]:
     cfg = cfg or load_config()
     wanted = set(_resolve_browser_names(browsers=browsers, cfg=cfg))
@@ -203,7 +203,7 @@ def apply_models(
     service: str = "claude",
     browsers: list[str] | None = None,
     dry_run: bool = False,
-    cfg: ColoniaConfig | None = None,
+    cfg: ColoniumConfig | None = None,
 ) -> list[dict[str, Any]]:
     if service not in {"claude", "gemini", "grok", "perplexity", "chatgpt"}:
         raise ValueError(f"Unknown service: {service}")
@@ -246,15 +246,15 @@ def apply_models(
 
 def _apply_service(
     assignments: list[ModelAssignment],
-    cfg: ColoniaConfig,
+    cfg: ColoniumConfig,
     service: str,
 ) -> list[dict[str, Any]]:
     from playwright.sync_api import sync_playwright
 
-    from colonia.adapters.dom import ChatGPTAdapter, ClaudeAdapter, GeminiAdapter
-    from colonia.adapters.grok import GrokAdapter
-    from colonia.adapters.perplexity import PerplexityAdapter
-    from colonia.runner import _get_service_page
+    from colonium.adapters.dom import ChatGPTAdapter, ClaudeAdapter, GeminiAdapter
+    from colonium.adapters.grok import GrokAdapter
+    from colonium.adapters.perplexity import PerplexityAdapter
+    from colonium.runner import _get_service_page
 
     enabled = _enabled_browsers(cfg)
     adapters = {

@@ -4,10 +4,10 @@ from pathlib import Path
 
 from playwright.sync_api import Page
 
-from colonia.adapters.base import ChatAdapter, DomSelectors
-from colonia.models import ServiceName, TaskStatus
-from colonia.placeholders import is_thinking_placeholder
-from colonia.text import normalize_response_markdown
+from colonium.adapters.base import ChatAdapter, DomSelectors
+from colonium.models import ServiceName, TaskStatus
+from colonium.placeholders import is_thinking_placeholder
+from colonium.text import normalize_response_markdown
 
 
 class GrokAdapter(ChatAdapter):

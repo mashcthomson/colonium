@@ -6,13 +6,13 @@ from pathlib import Path
 
 from playwright.sync_api import Page, sync_playwright
 
-from colonia.adapters import get_adapter
-from colonia.adapters.base import ChatAdapter
-from colonia.models import BrowserInstance, CouncilResponse, ServiceName, TaskStatus
-from colonia.prompt_profiles import apply_prompt_profile
-from colonia.runner import _browser_by_name, _ensure_service_page_loaded, _open_task_page
-from colonia.sessions import SessionStore
-from colonia.text import normalize_response_markdown
+from colonium.adapters import get_adapter
+from colonium.adapters.base import ChatAdapter
+from colonium.models import BrowserInstance, CouncilResponse, ServiceName, TaskStatus
+from colonium.prompt_profiles import apply_prompt_profile
+from colonium.runner import _browser_by_name, _ensure_service_page_loaded, _open_task_page
+from colonium.sessions import SessionStore
+from colonium.text import normalize_response_markdown
 
 
 @dataclass
@@ -119,7 +119,7 @@ def _prepare_and_send(
         status = adapter.ensure_ready(page)
         if status == TaskStatus.AUTH_REQUIRED:
             slot.status = TaskStatus.AUTH_REQUIRED
-            slot.error = "Login required — open this browser on Colonia Desktop 2 and sign in"
+            slot.error = "Login required — open this browser on Colonium Desktop 2 and sign in"
             return slot
 
         if session_id and not fresh_chat:
@@ -283,7 +283,7 @@ def _collect_slots(
             attachments_sent=[str(f) for f in files] if files else [],
         )
         if artifact_root:
-            from colonia.runner import _collect_response_artifacts
+            from colonium.runner import _collect_response_artifacts
 
             response.artifacts_received = _collect_response_artifacts(
                 slot.page,

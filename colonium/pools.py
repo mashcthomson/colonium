@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from colonia.models import BrowserInstance, ColoniaConfig
+from colonium.models import BrowserInstance, ColoniumConfig
 
 ACTIVE_POOL = frozenset({"alpha", "beta", "gamma", "delta", "epsilon"})
 RESERVE_POOL = frozenset({"zeta", "eta", "theta"})
@@ -25,7 +25,7 @@ def is_rate_limit_error(message: str | None) -> bool:
 
 
 class BrowserPoolManager:
-    def __init__(self, cfg: ColoniaConfig):
+    def __init__(self, cfg: ColoniumConfig):
         self.cfg = cfg
 
     def active_browsers(self) -> list[BrowserInstance]:

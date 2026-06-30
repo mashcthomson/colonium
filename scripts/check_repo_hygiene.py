@@ -17,10 +17,15 @@ SKIP_DIRS = {
     ".ruff_cache",
     ".gstack",
     "__pycache__",
-    ".colonia",
+    ".colonium",
     "dist",
     "build",
     "htmlcov",
+}
+
+SKIP_NAMES = {
+    ".coverage",
+    "coverage.xml",
 }
 
 SKIP_SUFFIXES = {
@@ -110,6 +115,8 @@ def iter_repo_files(root: Path) -> list[Path]:
             continue
         if any(part in SKIP_DIRS for part in path.parts):
             continue
+        if path.name in SKIP_NAMES:
+            continue
         if path.suffix.lower() in SKIP_SUFFIXES:
             continue
         files.append(path)
@@ -137,6 +144,8 @@ def scan_repo(root: Path) -> list[Finding]:
     for path in iter_repo_files(root):
         try:
             text = path.read_text(encoding="utf-8")
+        except FileNotFoundError:
+            continue
         except UnicodeDecodeError:
             continue
         findings.extend(scan_text(path.relative_to(root), text))
@@ -151,10 +160,7 @@ def main() -> int:
 
     print("Repository hygiene check failed:\n")
     for finding in findings:
-        print(
-            f"{finding.path}:{finding.line_number}: "
-            f"[{finding.rule.code}] {finding.rule.message}"
-        )
+        print(f"{finding.path}:{finding.line_number}: [{finding.rule.code}] {finding.rule.message}")
         print(f"  {finding.line}")
     return 1
 

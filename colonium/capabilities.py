@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from colonia.config import load_config
-from colonia.models import DEFAULT_SERVICE_ORDER, ColoniaConfig
-from colonia.pools import BrowserPoolManager, SKIP_BY_DEFAULT
+from colonium.config import load_config
+from colonium.models import DEFAULT_SERVICE_ORDER, ColoniumConfig
+from colonium.pools import BrowserPoolManager, SKIP_BY_DEFAULT
 
 
 PROMPT_SKILL_PRESETS: dict[str, dict[str, str]] = {
@@ -187,14 +187,14 @@ DESIRED_MODEL_PLAN: dict[str, Any] = {
         },
         "status": (
             "ChatGPT composer tools verified for Web search and Deep research; "
-            "profile variants are injected by Colonia at prompt time"
+            "profile variants are injected by Colonium at prompt time"
         ),
         "deep_research_note": "Deep research can take 10-30 minutes; use alpha/zeta only when explicitly needed.",
     },
 }
 
 
-def build_capabilities(cfg: ColoniaConfig | None = None) -> dict[str, Any]:
+def build_capabilities(cfg: ColoniumConfig | None = None) -> dict[str, Any]:
     cfg = cfg or load_config()
     pools = BrowserPoolManager(cfg)
     default_browsers = pools.select_browsers(["all"])
@@ -202,7 +202,7 @@ def build_capabilities(cfg: ColoniaConfig | None = None) -> dict[str, Any]:
     explicit_browsers = [browser.name for browser in cfg.browsers if browser.enabled]
 
     return {
-        "tool": "colonia",
+        "tool": "colonium",
         "version": "0.1.0",
         "description": "Multi-browser AI council orchestrator for local logged-in chatbot sessions.",
         "service_order": [service.value for service in DEFAULT_SERVICE_ORDER],
@@ -260,19 +260,19 @@ def build_capabilities(cfg: ColoniaConfig | None = None) -> dict[str, Any]:
         },
         "commands": {
             "ask": (
-                "colonia ask -p '<prompt>' --browser all --all-browsers "
+                "colonium ask -p '<prompt>' --browser all --all-browsers "
                 "--service gemini,claude,grok,perplexity,chatgpt --session-id <id>"
             ),
-            "ask_progress": "colonia ask -p '<prompt>' --browser all --progress",
-            "health": "colonia browsers health",
-            "capabilities": "colonia capabilities --json",
-            "models_plan": "colonia models plan --service gemini",
-            "models_apply_dry_run": "colonia models apply --service gemini --dry-run",
-            "models_apply_claude": "colonia models apply --service claude",
-            "models_apply_gemini": "colonia models apply --service gemini",
-            "models_apply_grok": "colonia models apply --service grok",
-            "models_apply_perplexity": "colonia models apply --service perplexity",
-            "models_apply_chatgpt": "colonia models apply --service chatgpt",
+            "ask_progress": "colonium ask -p '<prompt>' --browser all --progress",
+            "health": "colonium browsers health",
+            "capabilities": "colonium capabilities --json",
+            "models_plan": "colonium models plan --service gemini",
+            "models_apply_dry_run": "colonium models apply --service gemini --dry-run",
+            "models_apply_claude": "colonium models apply --service claude",
+            "models_apply_gemini": "colonium models apply --service gemini",
+            "models_apply_grok": "colonium models apply --service grok",
+            "models_apply_perplexity": "colonium models apply --service perplexity",
+            "models_apply_chatgpt": "colonium models apply --service chatgpt",
         },
         "caveats": [
             "Exact model labels are provider-UI dependent and should be verified before setting.",
