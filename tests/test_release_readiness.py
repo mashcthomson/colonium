@@ -1026,10 +1026,13 @@ def test_cli_commands_with_fakes(monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     assert cli.cmd_init(argparse.Namespace()) == 0
 
     class Desktop:
+        starts = 0
+
         def __init__(self, cfg: Any = None) -> None:
             self.cfg = cfg
 
         def start(self, force: bool = False) -> Any:
+            type(self).starts += 1
             return types.SimpleNamespace(mode=DesktopMode.XEPHYR)
 
         def status(self) -> dict[str, Any]:
@@ -1039,7 +1042,7 @@ def test_cli_commands_with_fakes(monkeypatch: pytest.MonkeyPatch, tmp_path: Path
             return True
 
         def load_state(self) -> bool:
-            return True
+            return False
 
     class Launcher:
         def launch_all(self, **kwargs: Any) -> list[Any]:
@@ -1052,7 +1055,7 @@ def test_cli_commands_with_fakes(monkeypatch: pytest.MonkeyPatch, tmp_path: Path
         def health(self) -> list[dict[str, Any]]:
             return [{"name": "alpha"}]
 
-    monkeypatch.setattr("colonium.desktop.linux.LinuxDesktopManager", Desktop)
+    monkeypatch.setattr("colonium.desktop.create_desktop_manager", lambda cfg=None: Desktop(cfg))
     monkeypatch.setattr("colonium.browser.launcher.BrowserLauncher", Launcher)
 
     assert (
@@ -1066,11 +1069,38 @@ def test_cli_commands_with_fakes(monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     assert (
         cli.cmd_browsers_launch(argparse.Namespace(name="alpha,beta", login=True, force=True)) == 0
     )
+    assert Desktop.starts == 2
     assert cli.cmd_browsers_stop(argparse.Namespace()) == 0
     assert cli.cmd_browsers_health(argparse.Namespace()) == 0
 
-    monkeypatch.setattr("colonium.capabilities.build_capabilities", lambda: {"service_order": []})
+    monkeypatch.setattr(
+        "colonium.capabilities.build_capabilities",
+        lambda: {
+            "service_order": ["gemini", "claude"],
+            "browser_selection": {
+                "default_all": ["beta"],
+                "reserve_inclusive_all": ["beta", "zeta"],
+                "skipped_by_default": ["alpha"],
+            },
+        },
+    )
     assert cli.cmd_capabilities(argparse.Namespace(json=True)) == 0
+    assert cli.cmd_capabilities(argparse.Namespace(json=False)) == 0
+
+    monkeypatch.setattr(
+        "colonium.model_settings.model_plan",
+        lambda service=None, browsers=None: [{"service": service, "browsers": browsers}],
+    )
+    assert cli.cmd_models_plan(argparse.Namespace(service="claude", browser="beta,gamma")) == 0
+
+    monkeypatch.setattr(
+        "colonium.model_settings.apply_models",
+        lambda service, browsers, dry_run: [{"status": "planned"}],
+    )
+    assert (
+        cli.cmd_models_apply(argparse.Namespace(service="claude", browser="beta", dry_run=True))
+        == 0
+    )
 
 
 def test_cli_ask_and_main_error_paths(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1104,3 +1134,5 @@ def test_cli_ask_and_main_error_paths(monkeypatch: pytest.MonkeyPatch) -> None:
     )
     args.func = lambda parsed: (_ for _ in ()).throw(RuntimeError("bad"))
     assert cli.main([]) == 1
+    args.func = lambda parsed: (_ for _ in ()).throw(KeyboardInterrupt())
+    assert cli.main([]) == 130
